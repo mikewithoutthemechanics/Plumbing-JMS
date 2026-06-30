@@ -1,26 +1,68 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #151617;
+  --muted: #f5f5f5;
+  --border: #999999;
+  --accent: #3b82f6;
+  --font-size-xs: 10px;
+  --font-size-sm: 13.33px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--muted);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    font-size: var(--font-size-md);
+    transition-duration: 200ms;
+  }
+  .btn-primary {
+    @apply bg-gray-900 text-white hover:bg-gray-800 focus:ring-blue-500;
+  }
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-900 border border-gray-300 hover:bg-gray-200 focus:ring-gray-500;
+  }
+  .input {
+    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    font-size: var(--font-size-md);
+  }
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+    font-size: var(--font-size-sm);
+  }
+  .card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+    padding: 16px;
+  }
+  *:focus-visible {
+    @apply outline-none;
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+}
+
+.offline-indicator {
+  @apply fixed bottom-4 right-4 z-50 px-4 py-2 rounded-full text-sm font-medium shadow-lg;
+  font-size: var(--font-size-sm);
+}
+
+.offline-indicator.online {
+  @apply bg-green-100 text-green-800 border border-green-200;
+}
+
+.offline-indicator.offline {
+  @apply bg-orange-100 text-orange-800 border border-orange-200;
 }
