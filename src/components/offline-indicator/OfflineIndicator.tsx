@@ -29,7 +29,7 @@ export default function OfflineIndicator() {
       updatePending();
     }
 
-    const interval = setInterval(updatePending, 5000);
+    const interval = setInterval(updatePending, 30000);
 
     return () => {
       window.removeEventListener('online', handleOnline);

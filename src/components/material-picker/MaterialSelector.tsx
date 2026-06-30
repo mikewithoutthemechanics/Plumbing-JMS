@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
 
 interface Props {
   jobId: string;
@@ -17,8 +16,11 @@ export default function MaterialSelector({ jobId, onAddMaterial, onAddCustom, lo
   const [qty, setQty] = useState(1);
 
   useEffect(() => {
-    supabase.from('materials').select('id, name, unit').eq('is_active', true).order('name')
-      .then(({ data }) => data && setMaterials(data));
+    import('@/lib/supabase/client').then(({ supabase }) => {
+      if (!supabase) return;
+      supabase.from('materials').select('id, name, unit').eq('is_active', true).order('name')
+        .then(({ data }) => data && setMaterials(data));
+    });
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

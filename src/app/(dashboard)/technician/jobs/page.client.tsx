@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
 import type { JobCard, JobMaterial, JobState } from '@/types';
 import MaterialSelector from '@/components/material-picker/MaterialSelector';
@@ -20,6 +19,8 @@ export default function TechnicianJobsClient({ initialJobs, userId }: Props) {
   const [loading, setLoading] = useState(false);
 
   const refreshJobs = async () => {
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
     const { data } = await supabase
       .from('job_cards')
       .select(`
@@ -39,7 +40,9 @@ export default function TechnicianJobsClient({ initialJobs, userId }: Props) {
 
   const advanceState = async (jobId: string, newStatus: JobState) => {
     setLoading(true);
-    const { error } = await supabase.from('job_cards').update({ status: newStatus }).eq('id', jobId);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
+    const { error } = await supabase.from('job_cards').update({ status: newStatus } as never).eq('id', jobId);
     if (error) alert('Error: ' + error.message);
     else if (selectedJob?.id === jobId) {
       setSelectedJob({ ...selectedJob, status: newStatus });
@@ -48,35 +51,45 @@ export default function TechnicianJobsClient({ initialJobs, userId }: Props) {
     setLoading(false);
   };
 
-  const addMaterial = async (jobId: string, materialId: string, quantity: number) => {
+const addMaterial = async (jobId: string, materialId: string, quantity: number) => {
     setLoading(true);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
     const { data: material } = await supabase.from('materials').select('admin_unit_price').eq('id', materialId).single();
     if (!material) {
       alert('Material not found');
       setLoading(false);
       return;
     }
+    const materialData = material as unknown as { admin_unit_price: number };
+    const jobMaterialData = {
+      job_card_id: jobId,
+      material_id: materialId,
+      quantity,
+      admin_unit_price: materialData.admin_unit_price,
+      line_total: materialData.admin_unit_price * quantity,
+    };
     const { data, error } = await supabase
       .from('job_materials')
-      .insert({
-        job_card_id: jobId,
-        material_id: materialId,
-        quantity,
-        admin_unit_price: material.admin_unit_price,
-        line_total: material.admin_unit_price * quantity,
-      })
+      .insert(jobMaterialData as never)
       .select()
       .single();
     if (error) alert('Error: ' + error.message);
     else {
+      const resultData = data as unknown as { line_total: number; id?: string };
       const { data: current } = await supabase.from('job_cards').select('materials_cost').eq('id', jobId).single();
-      const newCost = (current?.materials_cost || 0) + data.line_total;
-      const { error: updateError } = await supabase.from('job_cards').update({ materials_cost: newCost }).eq('id', jobId);
+      const currentData = current as unknown as { materials_cost?: number } | null;
+      const newCost = (currentData?.materials_cost || 0) + resultData.line_total;
+      const { error: updateError } = await supabase.from('job_cards').update({ materials_cost: newCost } as never).eq('id', jobId);
       if (updateError) alert('Error updating material cost: ' + updateError.message);
       if (selectedJob?.id === jobId) {
+        const existingMaterials = selectedJob.job_materials || [];
         setSelectedJob({
           ...selectedJob,
-          job_materials: [...(selectedJob.job_materials || []), data],
+          job_materials: [...existingMaterials, resultData] as JobMaterial[],
         });
       }
       refreshJobs();
@@ -86,13 +99,18 @@ export default function TechnicianJobsClient({ initialJobs, userId }: Props) {
 
   const addCustomMaterial = async (jobId: string, customName: string, quantity: number) => {
     setLoading(true);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
     const { error } = await supabase.from('job_materials').insert({
       job_card_id: jobId,
       custom_name: customName,
       quantity,
       admin_unit_price: 0,
       line_total: 0,
-    });
+    } as never);
     if (error) alert('Error: ' + error.message);
     else refreshJobs();
     setLoading(false);

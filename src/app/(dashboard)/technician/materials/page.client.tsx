@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
 
 interface MaterialSummary {
   id: string;
@@ -19,6 +18,8 @@ export default function TechnicianMaterialsClient({ activeJobs, materials }: { a
 
   const refreshRecent = async () => {
     if (!selectedJobId) return;
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
     const { data } = await supabase
       .from('job_materials')
       .select('*, materials(name)')
@@ -35,12 +36,20 @@ export default function TechnicianMaterialsClient({ activeJobs, materials }: { a
     }
 
     setLoading(true);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) {
+      alert('Supabase not configured');
+      setLoading(false);
+      return;
+    }
     if (selectedMaterialId) {
       const { error } = await supabase.from('job_materials').insert({
         job_card_id: selectedJobId,
         material_id: selectedMaterialId,
         quantity,
-      });
+        admin_unit_price: 0,
+        line_total: 0,
+      } as never);
       if (error) alert('Error: ' + error.message);
       else refreshRecent();
     } else if (customName) {
@@ -50,7 +59,7 @@ export default function TechnicianMaterialsClient({ activeJobs, materials }: { a
         quantity,
         admin_unit_price: 0,
         line_total: 0,
-      });
+      } as never);
       if (error) alert('Error: ' + error.message);
       else {
         setCustomName('');

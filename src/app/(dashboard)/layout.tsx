@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -50,6 +49,12 @@ export default function DashboardLayout({
         return;
       }
 
+      const { supabase } = await import('@/lib/supabase/client');
+      if (!supabase) {
+        router.push('/login');
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/login');
@@ -62,7 +67,8 @@ export default function DashboardLayout({
         .eq('id', user.id)
         .single();
 
-      setUser({ email: user.email!, role: profile?.role, name: profile?.full_name });
+      const profileData = profile as unknown as { role?: string; full_name?: string } | null;
+      setUser({ email: user.email!, role: profileData?.role, name: profileData?.full_name });
       setLoading(false);
     };
 
@@ -76,7 +82,8 @@ export default function DashboardLayout({
       router.push('/login');
       return;
     }
-    await supabase.auth.signOut();
+    const { supabase } = await import('@/lib/supabase/client');
+    if (supabase) await supabase.auth.signOut();
     router.push('/login');
   };
 

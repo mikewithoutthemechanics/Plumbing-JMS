@@ -1,4 +1,5 @@
 import type { AuditLog } from '@/types';
+import { getRequestContext } from '@/lib/request-context';
 
 export async function logAudit(
   params: {
@@ -11,6 +12,25 @@ export async function logAudit(
     ipAddress?: string;
   },
 ): Promise<void> {
+  // Auto-extract IP from request context if not provided
+  let ip = params.ipAddress;
+  if (!ip) {
+    try {
+      const ctx = getRequestContext();
+      if (ctx) {
+        const req = ctx.request;
+        const forwarded = req.headers.get('x-forwarded-for');
+        if (forwarded) {
+          ip = forwarded.split(',')[0].trim();
+        } else {
+          ip = req.headers.get('x-real-ip') ?? 'unknown';
+        }
+      }
+    } catch {
+      // ignore context errors
+    }
+  }
+
   try {
     const response = await fetch('/api/audit', {
       method: 'POST',
@@ -22,7 +42,7 @@ export async function logAudit(
         old_values: sanitizeForAudit(params.oldValues || {}),
         new_values: sanitizeForAudit(params.newValues || {}),
         changed_by: params.changedBy,
-        ip_address: params.ipAddress,
+        ip_address: ip,
       }),
     });
 

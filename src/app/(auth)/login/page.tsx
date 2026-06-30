@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const DEV_ADMIN_EMAIL = 'test@agentcy.co.za';
+const enableDevAuth = process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === 'true';
+const devAdminEmail = process.env.NEXT_PUBLIC_DEV_ADMIN_EMAIL || '';
+const devAdminPassword = process.env.NEXT_PUBLIC_DEV_ADMIN_PASSWORD || '';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -21,10 +23,10 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        if (email === DEV_ADMIN_EMAIL && password === '123Admin') {
+        if (enableDevAuth && email === devAdminEmail && password === devAdminPassword) {
           const fakeUser = {
             id: 'dev-admin-001',
-            email: DEV_ADMIN_EMAIL,
+            email: devAdminEmail,
             user_metadata: { full_name: 'Dev Admin' },
           };
           localStorage.setItem('devAuth', JSON.stringify({ user: fakeUser, role: 'owner' }));
@@ -34,11 +36,19 @@ export default function LoginPage() {
         }
 
         const { supabase } = await import('@/lib/supabase/client');
+        if (!supabase) {
+          setError('Supabase not configured. Use dev mode: test@agentcy.co.za / 123Admin');
+          return;
+        }
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         router.push('/dashboard');
       } else {
         const { supabase } = await import('@/lib/supabase/client');
+        if (!supabase) {
+          setError('Supabase not configured');
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -65,6 +75,10 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { supabase } = await import('@/lib/supabase/client');
+      if (!supabase) {
+        setError('Supabase not configured');
+        return;
+      }
       const { error } = await supabase.auth.signInWithOtp({ email });
       if (error) throw error;
       router.push('/magic-link?email=' + encodeURIComponent(email));

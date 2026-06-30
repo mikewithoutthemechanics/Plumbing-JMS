@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
 import type { Customer } from '@/types';
 
 interface Props {
@@ -23,7 +22,19 @@ export default function CustomersClient({ initialCustomers }: Props) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.from('customers').insert(formData);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+    const customerData = {
+      name: formData.name,
+      email: formData.email || null,
+      phone: formData.phone || null,
+      address: formData.address,
+      notes: formData.notes || null,
+    };
+    const { error } = await supabase.from('customers').insert(customerData as never);
     if (error) alert('Error: ' + error.message);
     else {
       setShowModal(false);
@@ -34,6 +45,8 @@ export default function CustomersClient({ initialCustomers }: Props) {
   };
 
   const refresh = async () => {
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
     const { data } = await supabase.from('customers').select('*').order('name');
     if (data) setCustomers(data);
   };

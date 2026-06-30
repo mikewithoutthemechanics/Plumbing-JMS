@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
 import { calculateHours, formatDateTime } from '@/lib/utils/calculations';
 import type { JobCard } from '@/types';
 
@@ -17,6 +16,8 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
 
   useEffect(() => {
     const fetchLogs = async () => {
+      const { supabase } = await import('@/lib/supabase/client');
+      if (!supabase) return;
       const { data } = await supabase
         .from('time_logs')
         .select('*')
@@ -28,13 +29,16 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
   }, [userId]);
 
   const clockIn = async (jobId: string) => {
-    const { error } = await supabase.from('time_logs').insert({
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
+    const logData = {
       job_card_id: jobId,
       technician_id: userId,
       clock_in: new Date().toISOString(),
       hours: 0,
       is_paused: false,
-    });
+    };
+    const { error } = await supabase.from('time_logs').insert(logData as never);
     if (error) alert('Error: ' + error.message);
     else {
       setActiveJobId(jobId);
@@ -43,6 +47,8 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
   };
 
   const clockOut = async (jobId: string) => {
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
     const { data: log } = await supabase
       .from('time_logs')
       .select('*')
@@ -56,14 +62,12 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
       return;
     }
 
-    const hours = calculateHours(log.clock_in, new Date().toISOString());
+    const logData = log as unknown as { clock_in: string; id: string };
+    const hours = calculateHours(logData.clock_in, new Date().toISOString());
     const { error } = await supabase
       .from('time_logs')
-      .update({
-        clock_out: new Date().toISOString(),
-        hours,
-      })
-      .eq('id', log.id);
+      .update({ clock_out: new Date().toISOString(), hours } as never)
+      .eq('id', logData.id);
 
     if (error) alert('Error: ' + error.message);
     else {
@@ -73,6 +77,8 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
   };
 
   const refresh = async () => {
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
     const { data } = await supabase
       .from('job_cards')
       .select('*')

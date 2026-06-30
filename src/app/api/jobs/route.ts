@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/utils/audit';
+import { validateJobInput } from '@/lib/validation';
 import { canAdvanceState, canAccessJob, canSeePricing } from '@/lib/utils/permissions';
 
 export async function GET(request: NextRequest) {
@@ -78,6 +79,12 @@ export async function POST(request: NextRequest) {
     const { customer_id, description, admin_hourly_rate, admin_notes, assigned_to } = body;
     if (!customer_id || !description || admin_hourly_rate == null) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Validate numeric and other required fields via validator
+    const validationErrors = validateJobInput(body);
+    if (validationErrors.length > 0) {
+      return NextResponse.json({ error: validationErrors.join(', ') }, { status: 400 });
     }
 
     const jobNumber = `JOB-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;

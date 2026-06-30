@@ -5,7 +5,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<string>> = {
   technician: new Set([
     'read:own_jobs',
     'write:own_time',
-    'write:own_materials',
+    'write:job_materials',
     'read:materials:no_price',
   ]),
   accountant: new Set([

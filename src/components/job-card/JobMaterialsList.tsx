@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
 
 interface JobMaterial {
   id: string;
@@ -20,6 +19,8 @@ export default function JobMaterialsList({ materials, onUpdate }: Props) {
 
   const handleRemove = async (materialId: string) => {
     setRemoving(materialId);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
     const { error } = await supabase.from('job_materials').delete().eq('id', materialId);
     if (error) alert('Error: ' + error.message);
     else onUpdate();

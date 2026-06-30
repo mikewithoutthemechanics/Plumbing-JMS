@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import TechnicianScheduleClient from './page.client';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,8 +10,8 @@ export default async function TechnicianSchedulePage() {
 
   if (devMode) {
     const MOCK_SCHEDULE = [
-      { profile_id: 'dev-admin-001', date: '2026-07-01', status: 'available', notes: '' },
-      { profile_id: 'dev-admin-001', date: '2026-07-02', status: 'available', notes: '' },
+      { id: '1', profile_id: 'dev-admin-001', date: '2026-07-01', status: 'available' as const, created_at: new Date().toISOString() },
+      { id: '2', profile_id: 'dev-admin-001', date: '2026-07-02', status: 'available' as const, created_at: new Date().toISOString() },
     ];
     return <TechnicianScheduleClient initialSchedule={MOCK_SCHEDULE} isOwner={true} />;
   }

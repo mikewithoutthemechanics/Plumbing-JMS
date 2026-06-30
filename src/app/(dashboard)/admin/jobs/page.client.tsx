@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
 import { formatDateTime } from '@/lib/utils/calculations';
 import { JOB_STATE_LABELS, JOB_STATES } from '@/lib/constants/job-states';
 import type { JobCard, Customer, Profile, BankingDetails } from '@/types';
@@ -33,6 +32,8 @@ export default function AdminJobsClient({ initialJobs }: Props) {
     assigned_to: '',
   });
   const refreshJobs = async () => {
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
     const { data } = await supabase
       .from('job_cards')
       .select(`
@@ -46,6 +47,8 @@ export default function AdminJobsClient({ initialJobs }: Props) {
 
   useEffect(() => {
     const initData = async () => {
+      const { supabase } = await import('@/lib/supabase/client');
+      if (!supabase) return;
       const [custRes, techRes, bankRes] = await Promise.all([
         supabase.from('customers').select('id, name, address, created_at, updated_at').order('name'),
         supabase.from('profiles').select('id, full_name, email, role, created_at, updated_at').eq('role', 'technician'),
@@ -53,7 +56,8 @@ export default function AdminJobsClient({ initialJobs }: Props) {
       ]);
       if (custRes.data) setCustomers(custRes.data as Customer[]);
       if (techRes.data) setTechnicians(techRes.data as Profile[]);
-      if (bankRes.data) setBanking(bankRes.data as BankingDetails);
+      const bankingData = (bankRes as { data?: BankingDetails }).data;
+      if (bankingData) setBanking(bankingData);
     };
     initData();
   }, []);
@@ -61,14 +65,20 @@ export default function AdminJobsClient({ initialJobs }: Props) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.from('job_cards').insert({
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+    const jobData = {
       customer_id: formData.customer_id,
       description: formData.description,
       admin_hourly_rate: parseFloat(formData.admin_hourly_rate),
       admin_notes: formData.admin_notes,
       assigned_to: formData.assigned_to || null,
       status: formData.assigned_to ? 'assigned' : 'pending',
-    });
+    };
+    const { error } = await supabase.from('job_cards').insert(jobData as never);
     if (error) alert('Error: ' + error.message);
     else {
       setShowCreateModal(false);
@@ -80,7 +90,9 @@ export default function AdminJobsClient({ initialJobs }: Props) {
 
   const advanceState = async (jobId: string, newStatus: JobState) => {
     setLoading(true);
-    const { error } = await supabase.from('job_cards').update({ status: newStatus }).eq('id', jobId);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
+    const { error } = await supabase.from('job_cards').update({ status: newStatus } as never).eq('id', jobId);
     if (error) alert('Error: ' + error.message);
     else refreshJobs();
     setLoading(false);
@@ -93,7 +105,8 @@ export default function AdminJobsClient({ initialJobs }: Props) {
     }
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
       const response = await fetch('/api/export', {
         method: 'POST',
         headers: {

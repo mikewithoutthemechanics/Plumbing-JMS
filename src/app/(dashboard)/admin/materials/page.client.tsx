@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
 import type { Material } from '@/types';
 
 interface Props {
@@ -26,11 +25,18 @@ export default function MaterialsClient({ initialMaterials }: Props) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.from('materials').insert({
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+    const materialData = {
       ...formData,
       admin_unit_price: parseFloat(formData.admin_unit_price),
       quantity_on_hand: parseFloat(formData.quantity_on_hand) || 0,
-    });
+      description: formData.description || null,
+    };
+    const { error } = await supabase.from('materials').insert(materialData as never);
     if (error) alert('Error: ' + error.message);
     else {
       setShowModal(false);
@@ -42,7 +48,12 @@ export default function MaterialsClient({ initialMaterials }: Props) {
 
   const handleUpdateQty = async (material: Material) => {
     setLoading(true);
-    const { error } = await supabase.from('materials').update({ quantity_on_hand: parseFloat(editQty) }).eq('id', material.id);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+    const { error } = await supabase.from('materials').update({ quantity_on_hand: parseFloat(editQty) } as never).eq('id', material.id);
     if (error) alert('Error: ' + error.message);
     else {
       setMaterials(materials.map(m => m.id === material.id ? { ...m, quantity_on_hand: parseFloat(editQty) } : m));
@@ -52,6 +63,8 @@ export default function MaterialsClient({ initialMaterials }: Props) {
   };
 
   const refresh = async () => {
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
     const { data } = await supabase.from('materials').select('*').eq('is_active', true).order('name');
     if (data) setMaterials(data as Material[]);
   };

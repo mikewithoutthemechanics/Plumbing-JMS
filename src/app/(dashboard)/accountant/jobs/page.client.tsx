@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
 import { formatDateTime } from '@/lib/utils/calculations';
 import type { JobCard } from '@/types';
 
@@ -13,26 +12,27 @@ export default function AccountantJobsClient({ initialJobs }: Props) {
   const [jobs, setJobs] = useState(initialJobs);
 
   useEffect(() => {
-    const channel = supabase
-      .channel('accountant-jobs')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'job_cards' },
-        () => {
-          supabase
-            .from('job_cards')
-            .select(`
-              *,
-              customer:customers(name),
-              assigned_to_profile:profiles!job_cards_assigned_to_fkey(full_name)
-            `)
-            .in('status', ['completed', 'invoiced'])
-            .order('invoiced_at', { ascending: false })
-            .then(({ data }) => data && setJobs(data));
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    import('@/lib/supabase/client').then(({ supabase }) => {
+      if (!supabase) return;
+      supabase
+        .channel('accountant-jobs')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'job_cards' },
+          () => {
+            supabase
+              .from('job_cards')
+              .select(`
+                *,
+                customer:customers(name),
+                assigned_to_profile:profiles!job_cards_assigned_to_fkey(full_name)
+              `)
+              .in('status', ['completed', 'invoiced'])
+              .order('invoiced_at', { ascending: false })
+              .then(({ data }) => data && setJobs(data));
+          }
+        )
+        .subscribe();
+    });
   }, []);
 
   return (

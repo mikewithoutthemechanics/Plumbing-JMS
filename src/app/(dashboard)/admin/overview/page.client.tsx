@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase/client';
 import { formatDateTime } from '@/lib/utils/calculations';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
 import type { JobCard, AuditLog, Material } from '@/types';
@@ -20,14 +19,16 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], recentAudi
   const [autoNotify, setAutoNotify] = useState(false);
 
   useEffect(() => {
-    const channel = supabase
-      .channel('admin-overview')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'job_cards' }, () => {
-        supabase.from('job_cards').select('status, grand_total, created_at').order('created_at', { ascending: false }).limit(10)
-          .then(({ data }) => data && setJobs(data as JobCard[]));
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    import('@/lib/supabase/client').then(({ supabase }) => {
+      if (!supabase) return;
+      supabase
+        .channel('admin-overview')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'job_cards' }, () => {
+          supabase.from('job_cards').select('status, grand_total, created_at').order('created_at', { ascending: false }).limit(10)
+            .then(({ data }) => data && setJobs(data as JobCard[]));
+        })
+        .subscribe();
+    });
   }, []);
 
   const pending = jobs.filter(j => j.status === 'pending').length;
