@@ -110,7 +110,7 @@ export interface BankingDetails {
 
 export interface SyncQueueItem {
   id: string;
-  table: string;
+  table_name: string;
   operation: 'INSERT' | 'UPDATE' | 'DELETE';
   payload: Record<string, unknown>;
   timestamp: string;

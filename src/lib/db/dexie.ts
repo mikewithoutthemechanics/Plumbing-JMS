@@ -12,24 +12,24 @@ export class PlumbingDB extends Dexie {
 
   constructor() {
     super('plumbing-jms');
-    this.version(1).stores({
-      profiles: 'id, email, role, created_at',
-      customers: 'id, name, created_at',
-      materials: 'id, name, is_active, created_at',
-      jobCards: 'id, job_number, customer_id, assigned_to, status, created_at',
-      jobMaterials: 'id, job_card_id, material_id, created_at',
-      timeLogs: 'id, job_card_id, technician_id, clock_in, created_at',
-      syncQueue: 'id, table, status, timestamp',
-    });
+this.version(1).stores({
+       profiles: 'id, email, role, created_at',
+       customers: 'id, name, created_at',
+       materials: 'id, name, is_active, created_at',
+       jobCards: 'id, job_number, customer_id, assigned_to, status, created_at',
+       jobMaterials: 'id, job_card_id, material_id, created_at',
+       timeLogs: 'id, job_card_id, technician_id, clock_in, created_at',
+       syncQueue: 'id, table_name, status, timestamp',
+     });
   }
 }
 
 export const db = new PlumbingDB();
 
-export async function queueSync(table: SyncQueueItem['table'], operation: SyncQueueItem['operation'], payload: Record<string, unknown>) {
+export async function queueSync(table_name: SyncQueueItem['table_name'], operation: SyncQueueItem['operation'], payload: Record<string, unknown>) {
   await db.syncQueue.add({
     id: crypto.randomUUID(),
-    table,
+    table_name,
     operation,
     payload,
     timestamp: new Date().toISOString(),
