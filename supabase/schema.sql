@@ -164,6 +164,8 @@ alter table public.sync_queue enable row level security;
 -- RLS Policies
 create policy "Owner full access" on public.profiles for all using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+) with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
 
 create policy "Technicians read own" on public.profiles for select using (
@@ -172,6 +174,8 @@ create policy "Technicians read own" on public.profiles for select using (
 
 create policy "Owner full access" on public.customers for all using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+) with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
 
 create policy "Accountants read access" on public.customers for select using (
@@ -179,6 +183,8 @@ create policy "Accountants read access" on public.customers for select using (
 );
 
 create policy "Owner full access" on public.materials for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+) with check (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
 
@@ -192,6 +198,8 @@ create policy "Accountants read access" on public.materials for select using (
 
 create policy "Owner full access" on public.job_cards for all using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+) with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
 
 create policy "Technicians read own jobs" on public.job_cards for select using (
@@ -199,6 +207,9 @@ create policy "Technicians read own jobs" on public.job_cards for select using (
 );
 
 create policy "Technicians update own jobs limited" on public.job_cards for update using (
+  assigned_to = auth.uid() and status in ('assigned','in_progress','completed')
+  and exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
+) with check (
   assigned_to = auth.uid() and status in ('assigned','in_progress','completed')
   and exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
 );
@@ -209,9 +220,17 @@ create policy "Accountants read completed" on public.job_cards for select using 
 
 create policy "Owner full access" on public.job_materials for all using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+) with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
 
 create policy "Technicians write own" on public.job_materials for insert using (
+  exists (
+    select 1 from public.job_cards jc
+    join public.profiles p on p.id = auth.uid()
+    where jc.id = job_card_id and jc.assigned_to = auth.uid() and p.role = 'technician'
+  )
+) with check (
   exists (
     select 1 from public.job_cards jc
     join public.profiles p on p.id = auth.uid()
@@ -228,9 +247,13 @@ create policy "Technicians read own" on public.job_materials for select using (
 
 create policy "Owner full access" on public.time_logs for all using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+) with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
 
 create policy "Technicians write own" on public.time_logs for insert using (
+  technician_id = auth.uid() and exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
+) with check (
   technician_id = auth.uid() and exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
 );
 
@@ -240,6 +263,8 @@ create policy "Technicians read own" on public.time_logs for select using (
 
 create policy "Owner full access" on public.banking_details for all using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+) with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
 
 create policy "Accountants read access" on public.banking_details for select using (
@@ -248,6 +273,8 @@ create policy "Accountants read access" on public.banking_details for select usi
 
 create policy "Owner full access" on public.audit_log for all using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+) with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
 
 create policy "Accountants read audit" on public.audit_log for select using (
@@ -255,6 +282,8 @@ create policy "Accountants read audit" on public.audit_log for select using (
 );
 
 create policy "Owner full access" on public.sync_queue for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+) with check (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
 
