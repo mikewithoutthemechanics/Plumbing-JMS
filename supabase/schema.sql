@@ -139,218 +139,149 @@ alter table public.banking_details enable row level security;
 alter table public.audit_log enable row level security;
 alter table public.sync_queue enable row level security;
 
--- RLS Policies - Profiles
+-- RLS Policies - SELECT policies (all roles)
 create policy "Owner select profiles" on public.profiles for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
-create policy "Owner insert profiles" on public.profiles for insert using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner update profiles" on public.profiles for update using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner delete profiles" on public.profiles for delete using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Technicians read own profile" on public.profiles for select using (
+create policy "Technician select own profile" on public.profiles for select using (
   id = auth.uid()
 );
 
--- RLS Policies - Customers
 create policy "Owner select customers" on public.customers for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
-create policy "Owner insert customers" on public.customers for insert using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner update customers" on public.customers for update using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner delete customers" on public.customers for delete using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Accountants read customers" on public.customers for select using (
+create policy "Accountant select customers" on public.customers for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role in ('owner','accountant'))
 );
 
--- RLS Policies - Materials
 create policy "Owner select materials" on public.materials for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
-create policy "Owner insert materials" on public.materials for insert using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner update materials" on public.materials for update using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner delete materials" on public.materials for delete using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Technicians read materials" on public.materials for select using (
+create policy "Technician select materials" on public.materials for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
 );
-create policy "Accountants read materials" on public.materials for select using (
+create policy "Accountant select materials" on public.materials for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role in ('owner','accountant'))
 );
 
--- RLS Policies - Job Cards
 create policy "Owner select job_cards" on public.job_cards for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
-create policy "Owner insert job_cards" on public.job_cards for insert using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner update job_cards" on public.job_cards for update using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner delete job_cards" on public.job_cards for delete using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Technicians read own jobs" on public.job_cards for select using (
+create policy "Technician select own jobs" on public.job_cards for select using (
   assigned_to = auth.uid() and exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
 );
-create policy "Technicians update own jobs" on public.job_cards for update using (
-  assigned_to = auth.uid() and status in ('assigned','in_progress','completed')
-  and exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
-) with check (
-  assigned_to = auth.uid() and status in ('assigned','in_progress','completed')
-  and exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
+create policy "Accountant select completed jobs" on public.job_cards for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'accountant')
+  and status in ('completed','invoiced')
 );
-create policy "Technicians insert job_materials" on public.job_materials for insert using (
-  exists (
-    select 1 from public.job_cards jc
-    join public.profiles p on p.id = auth.uid()
-    where jc.id = job_card_id and jc.assigned_to = auth.uid() and p.role = 'technician'
-  )
-) with check (
-  exists (
-    select 1 from public.job_cards jc
-    join public.profiles p on p.id = auth.uid()
-    where jc.id = job_card_id and jc.assigned_to = auth.uid() and p.role = 'technician'
-  )
+
+create policy "Owner select job_materials" on public.job_materials for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
-create policy "Technicians read job_materials" on public.job_materials for select using (
+create policy "Technician select job_materials" on public.job_materials for select using (
   exists (
     select 1 from public.job_cards jc
     where jc.id = job_card_id and jc.assigned_to = auth.uid()
   )
 );
-create policy "Accountants read completed jobs" on public.job_cards for select using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'accountant')
-  and status in ('completed','invoiced')
-);
 
--- RLS Policies - Job Materials
-create policy "Owner select job_materials" on public.job_materials for select using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner insert job_materials" on public.job_materials for insert using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner update job_materials" on public.job_materials for update using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner delete job_materials" on public.job_materials for delete using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-
--- RLS Policies - Time Logs
 create policy "Owner select time_logs" on public.time_logs for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
-create policy "Owner insert time_logs" on public.time_logs for insert using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner update time_logs" on public.time_logs for update using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner delete time_logs" on public.time_logs for delete using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Technicians insert time_logs" on public.time_logs for insert using (
-  technician_id = auth.uid() and exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
-) with check (
-  technician_id = auth.uid() and exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
-);
-create policy "Technicians select time_logs" on public.time_logs for select using (
+create policy "Technician select time_logs" on public.time_logs for select using (
   technician_id = auth.uid()
 );
 
--- RLS Policies - Banking Details
 create policy "Owner select banking_details" on public.banking_details for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
-create policy "Owner insert banking_details" on public.banking_details for insert using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner update banking_details" on public.banking_details for update using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner delete banking_details" on public.banking_details for delete using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Accountants read banking_details" on public.banking_details for select using (
+create policy "Accountant select banking_details" on public.banking_details for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role in ('owner','accountant'))
 );
 
--- RLS Policies - Audit Log
 create policy "Owner select audit_log" on public.audit_log for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
-create policy "Owner insert audit_log" on public.audit_log for insert using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Accountants read audit_log" on public.audit_log for select using (
+create policy "Accountant select audit_log" on public.audit_log for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role in ('owner','accountant'))
 );
 
--- RLS Policies - Sync Queue
 create policy "Owner select sync_queue" on public.sync_queue for select using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
-create policy "Owner insert sync_queue" on public.sync_queue for insert using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-);
-create policy "Owner update sync_queue" on public.sync_queue for update using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
-) with check (
+
+-- RLS Policies - INSERT/UPDATE/DELETE policies (with WITH CHECK only, no USING)
+create policy "Owner insert customers" on public.customers for insert with check (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
-create policy "Owner delete sync_queue" on public.sync_queue for delete using (
+create policy "Owner update customers" on public.customers for update with check (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
+create policy "Owner delete customers" on public.customers for delete using (true);
+
+create policy "Owner insert materials" on public.materials for insert with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+create policy "Owner update materials" on public.materials for update with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+create policy "Owner delete materials" on public.materials for delete using (true);
+
+create policy "Owner insert job_cards" on public.job_cards for insert with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+create policy "Owner update job_cards" on public.job_cards for update with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+create policy "Owner delete job_cards" on public.job_cards for delete using (true);
+create policy "Technician update own jobs" on public.job_cards for update using (
+  assigned_to = auth.uid() and status in ('assigned','in_progress','completed')
+  and exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
+);
+
+create policy "Owner insert job_materials" on public.job_materials for insert with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+create policy "Owner update job_materials" on public.job_materials for update with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+create policy "Owner delete job_materials" on public.job_materials for delete using (true);
+create policy "Technician insert job_materials" on public.job_materials for insert using (
+  exists (
+    select 1 from public.job_cards jc
+    join public.profiles p on p.id = auth.uid()
+    where jc.id = job_card_id and jc.assigned_to = auth.uid() and p.role = 'technician'
+  )
+);
+
+create policy "Owner insert time_logs" on public.time_logs for insert with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+create policy "Owner update time_logs" on public.time_logs for update with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+create policy "Owner delete time_logs" on public.time_logs for delete using (true);
+create policy "Technician insert time_logs" on public.time_logs for insert with check (
+  technician_id = auth.uid() and exists (select 1 from public.profiles where id = auth.uid() and role = 'technician')
+);
+
+create policy "Owner insert banking_details" on public.banking_details for insert with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+create policy "Owner update banking_details" on public.banking_details for update with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+create policy "Owner delete banking_details" on public.banking_details for delete using (true);
+
+create policy "Owner insert audit_log" on public.audit_log for insert with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+
+create policy "Owner insert sync_queue" on public.sync_queue for insert with check (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+);
+create policy "Owner update sync_queue" on public.sync_queue for update using (true);
+create policy "Owner delete sync_queue" on public.sync_queue for delete using (true);
 
 -- Performance indexes
 create index if not exists idx_profiles_role on public.profiles(role);

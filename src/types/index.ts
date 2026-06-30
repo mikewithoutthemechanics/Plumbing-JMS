@@ -117,3 +117,60 @@ export interface SyncQueueItem {
   retries: number;
   status: 'pending' | 'syncing' | 'failed';
 }
+
+export interface Service {
+  id: string;
+  name: string;
+  description?: string;
+  default_hourly_rate: number;
+  default_materials?: { id: string; quantity: number }[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StaffSchedule {
+  id: string;
+  profile_id: string;
+  date: string;
+  status: 'available' | 'busy' | 'off' | 'vacation';
+  notes?: string;
+  created_at: string;
+}
+
+export interface Communication {
+  id: string;
+  customer_id?: string;
+  job_id?: string;
+  type: 'call' | 'email' | 'sms' | 'whatsapp';
+  direction: 'inbound' | 'outbound';
+  summary: string;
+  timestamp: string;
+  recorded_by?: string;
+}
+
+export interface Invoice {
+  id: string;
+  job_card_id: string;
+  invoice_number: string;
+  amount_due: number;
+  vat_amount: number;
+  due_date: string;
+  status: 'pending' | 'sent' | 'paid' | 'overdue';
+  sent_at?: string;
+  paid_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Quote {
+  id: string;
+  customer_id?: string;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  description: string;
+  status: 'pending' | 'reviewed' | 'quoted' | 'accepted' | 'rejected';
+  estimated_price?: number;
+  created_at: string;
+}
