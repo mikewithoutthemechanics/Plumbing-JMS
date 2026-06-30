@@ -1,5 +1,4 @@
 -- Plumbing Job Management System — Supabase Schema
--- Run with: supabase db push
 
 -- Enable required extensions
 create extension if not exists "uuid-ossp";
@@ -105,7 +104,7 @@ create table if not exists public.banking_details (
   updated_at timestamptz default now() not null
 );
 
--- Audit log — APPEND ONLY
+-- Audit log
 create table if not exists public.audit_log (
   id uuid primary key default gen_random_uuid(),
   table_name text not null,
@@ -118,8 +117,24 @@ create table if not exists public.audit_log (
   ip_address text
 );
 
-create index if not exists idx_audit_log_table_record on public.audit_log(table_name, record_id);
-create index if not exists idx_audit_log_changed_at on public.audit_log(changed_at desc);
+-- Sync queue
+create table if not exists public.sync_queue (
+  id uuid primary key default gen_random_uuid(),
+  table_name text not null,
+  operation text not null check (operation in ('INSERT','UPDATE','DELETE')),
+  payload jsonb not null,
+  timestamp timestamptz default now() not null,
+  retries integer not null default 0,
+  status text not null default 'pending' check (status in ('pending','syncing','failed'))
+);
+
+-- Non-negativity check constraints
+alter table public.materials add constraint chk_material_price_nonneg check (admin_unit_price >= 0);
+alter table public.materials add constraint chk_material_qty_nonneg check (quantity_on_hand >= 0);
+alter table public.job_cards add constraint chk_hourly_rate_nonneg check (admin_hourly_rate >= 0);
+alter table public.job_materials add constraint chk_material_qty_nonneg check (quantity > 0);
+alter table public.job_materials add constraint chk_line_total_nonneg check (line_total >= 0);
+alter table public.sync_queue add constraint chk_retries_nonneg check (retries >= 0);
 
 -- Performance indexes
 create index if not exists idx_profiles_role on public.profiles(role);
@@ -132,25 +147,8 @@ create index if not exists idx_time_logs_job on public.time_logs(job_card_id);
 create index if not exists idx_time_logs_tech on public.time_logs(technician_id);
 create index if not exists idx_materials_active on public.materials(is_active);
 create index if not exists idx_sync_queue_status_ts on public.sync_queue(status, "timestamp");
-
--- Non-negativity check constraints
-alter table public.materials add constraint chk_material_price_nonneg check (admin_unit_price >= 0);
-alter table public.materials add constraint chk_material_qty_nonneg check (quantity_on_hand >= 0);
-alter table public.job_cards add constraint chk_hourly_rate_nonneg check (admin_hourly_rate >= 0);
-alter table public.job_materials add constraint chk_material_qty_nonneg check (quantity > 0);
-alter table public.job_materials add constraint chk_line_total_nonneg check (line_total >= 0);
-alter table public.sync_queue add constraint chk_retries_nonneg check (retries >= 0);
-
--- Sync queue
-create table if not exists public.sync_queue (
-  id uuid primary key default gen_random_uuid(),
-  table_name text not null,
-  operation text not null check (operation in ('INSERT','UPDATE','DELETE')),
-  payload jsonb not null,
-  timestamp timestamptz default now() not null,
-  retries integer not null default 0,
-  status text not null default 'pending' check (status in ('pending','syncing','failed'))
-);
+create index if not exists idx_audit_log_table_record on public.audit_log(table_name, record_id);
+create index if not exists idx_audit_log_changed_at on public.audit_log(changed_at desc);
 
 -- Row Level Security
 alter table public.profiles enable row level security;
