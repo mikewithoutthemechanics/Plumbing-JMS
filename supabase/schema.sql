@@ -131,7 +131,7 @@ create index if not exists idx_job_materials_material on public.job_materials(ma
 create index if not exists idx_time_logs_job on public.time_logs(job_card_id);
 create index if not exists idx_time_logs_tech on public.time_logs(technician_id);
 create index if not exists idx_materials_active on public.materials(is_active);
-create index if not exists idx_sync_queue_status_ts on public.sync_queue(status, timestamp);
+create index if not exists idx_sync_queue_status_ts on public.sync_queue(status, "timestamp");
 
 -- Non-negativity check constraints
 alter table public.materials add constraint chk_material_price_nonneg check (admin_unit_price >= 0);
@@ -144,7 +144,7 @@ alter table public.sync_queue add constraint chk_retries_nonneg check (retries >
 -- Sync queue
 create table if not exists public.sync_queue (
   id uuid primary key default gen_random_uuid(),
-  table text not null,
+  table_name text not null,
   operation text not null check (operation in ('INSERT','UPDATE','DELETE')),
   payload jsonb not null,
   timestamp timestamptz default now() not null,
