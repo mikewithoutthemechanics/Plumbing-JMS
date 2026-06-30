@@ -46,7 +46,7 @@ export default function OfflineIndicator() {
         const response = await fetch('/api/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ table: item.table, operation: item.operation, payload: item.payload, id: item.id }),
+          body: JSON.stringify({ table_name: item.table_name, operation: item.operation, payload: item.payload, id: item.id }),
         });
         if (response.ok) {
           const { db } = await import('@/lib/db/dexie');

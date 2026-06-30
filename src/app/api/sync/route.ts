@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { table, operation, payload, id } = body;
+    const { table_name, operation, payload, id } = body;
+    const table = table_name;
 
     if (!['customers', 'materials', 'job_cards', 'job_materials', 'time_logs', 'sync_queue'].includes(table)) {
       return NextResponse.json({ error: 'Invalid table' }, { status: 400 });
