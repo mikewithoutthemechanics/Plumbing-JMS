@@ -93,7 +93,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="card p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Plumbing Job Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-plumber-primary to-plumber-accent">
+            Punctual Plumbers
+          </h1>
           <p className="text-gray-600 mt-2">
             {isLogin ? 'Sign in to your account' : 'Create your account'}
           </p>
@@ -153,7 +155,7 @@ export default function LoginPage() {
         <div className="mt-4 text-center">
           <button
             onClick={handleMagicLink}
-            className="text-sm text-blue-600 hover:text-blue-700"
+            className="btn btn-outline text-sm hover:bg-plumber-secondary/5"
             disabled={loading}
           >
             Send magic link instead

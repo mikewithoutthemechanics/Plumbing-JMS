@@ -1,22 +1,39 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 
 :root {
-  --foreground: #151617;
-  --muted: #f5f5f5;
-  --border: #999999;
-  --accent: #3b82f6;
+  --foreground: #0f172a;
+  --muted: #f8fafc;
+  --border: #e2e8f0;
+  --accent: #0ea5e9;
+  --accent-dark: #0284c7;
+  --accent-light: #7dd3fc;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --plumber-primary: #0369a1;
+  --plumber-secondary: #0284c7;
+  --plumber-accent: #fbbf24;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-size-xs: 10px;
-  --font-size-sm: 13.33px;
-  --font-size-md: 14px;
-  --font-size-lg: 16px;
+  --font-size-sm: 12.5px;
+  --font-size-md: 15px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
 }
 
 body {
   color: var(--foreground);
   background: var(--muted);
   min-height: 100vh;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path fill="%23e2e8f0" fill-opacity="0.3" d="M0 0h20v20H0zM0 10h20v2H0v-2zm10-8a2 2 0 110 4 2 2 0 010-4zM4 6a2 2 0 100 4 2 2 0 000-4zm12 0a2 2 0 100 4 2 2 0 000-4zm2 8a2 2 0 100 4 2 2 0 000-4zm-8 0a2 2 0 100 4 2 2 0 000-4zm4-12a2 2 0 100 4 2 2 0 000-4zm0 16a2 2 0 100 4 2 2 0 000-4z"/></svg>');
 }
 
 @utility text-balance {
@@ -25,44 +42,133 @@ body {
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow-md;
     font-size: var(--font-size-md);
-    transition-duration: 200ms;
+    font-weight: 500;
+    letter-spacing: -0.025em;
   }
   .btn-primary {
-    @apply bg-gray-900 text-white hover:bg-gray-800 focus:ring-blue-500;
+    @apply bg-plumber-primary text-white hover:bg-plumber-secondary focus:ring-2 focus:ring-offset-2 focus:ring-plumber-accent;
   }
   .btn-secondary {
-    @apply bg-gray-100 text-gray-900 border border-gray-300 hover:bg-gray-200 focus:ring-gray-500;
+    @apply bg-white text-plumber-primary border border-plumber-primary hover:bg-plumber-primary/5 focus:ring-2 focus-ring-offset-2 focus:ring-plumber-primary/20;
+  }
+  .btn-outline {
+    @apply border border-plumber-secondary/30 text-plumber-primary hover:bg-plumber-primary/5 hover:text-plumber-primary focus:ring-2 focus-ring-offset-2 focus:ring-plumber-primary/20;
+  }
+  .btn-accent {
+    @apply bg-plumber-accent text-white hover:bg-plumber-accent/90 focus:ring-2 focus-ring-offset-2 focus:ring-plumber-accent/20;
   }
   .input {
-    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500;
+    @apply block w-full rounded-md border border-plumber-secondary/20 px-4 py-3 focus:border-plumber-primary focus:outline-none focus:ring-2 focus-ring-offset-2 focus:ring-plumber-primary/20 text-sm shadow-sm hover:border-plumber-secondary/30 transition-all duration-200;
     font-size: var(--font-size-md);
   }
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium text-gray-700 mb-2;
     font-size: var(--font-size-sm);
+    font-weight: 500;
   }
   .card {
-    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
-    padding: 16px;
+    @apply bg-white rounded-xl border border-plumber-secondary/10 shadow-sm hover:shadow-md transition-shadow duration-200;
+    padding: 1.5rem;
+  }
+  .card-hover {
+    @apply hover:shadow-lg transition-shadow duration-200;
   }
   *:focus-visible {
     @apply outline-none;
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--plumber-primary);
     outline-offset: 2px;
+  }
+  .background-pattern {
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(3, 105, 161, 0.05) 0%, transparent 20%),
+      radial-gradient(circle at 90% 80%, rgba(2, 132, 199, 0.05) 0%, transparent 20%),
+      radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.03) 0%, transparent 15%);
   }
 }
 
 .offline-indicator {
   @apply fixed bottom-4 right-4 z-50 px-4 py-2 rounded-full text-sm font-medium shadow-lg;
   font-size: var(--font-size-sm);
+  animation: pulse 2s infinite;
 }
 
 .offline-indicator.online {
-  @apply bg-green-100 text-green-800 border border-green-200;
+  @apply bg-green-50 text-green-800 border border-green-200;
 }
 
 .offline-indicator.offline {
-  @apply bg-orange-100 text-orange-800 border border-orange-200;
+  @apply bg-amber-50 text-amber-800 border border-amber-200;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Water ripple effect for buttons */
+.ripple-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.5s ease, height 0.5s ease;
+}
+
+.ripple-button:hover::after {
+  width: 200px;
+  height: 200px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }

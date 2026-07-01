@@ -129,13 +129,15 @@ export default function DashboardLayout({
   if (!user && !isDevMode()) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white/50 background-pattern">
+      <nav className="bg-white/80 backdrop-blur-sm border-b border-plumber-secondary/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-gray-900">Plumbing JMS</h1>
+                <h1 className="text-xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-plumber-primary to-plumber-accent">
+                  Punctual Plumbers
+                </h1>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
 {navItems.map((item) => (
@@ -145,8 +147,8 @@ export default function DashboardLayout({
                      aria-current={pathname.startsWith(item.href) ? 'page' : undefined}
                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                        pathname.startsWith(item.href)
-                         ? 'border-blue-500 text-gray-900'
-                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                         ? 'border-plumber-primary text-gray-900'
+                         : 'border-transparent text-gray-500 hover:border-plumber-secondary/50 hover:text-gray-700'
                      }`}
                    >
                      <span className="mr-2">{item.icon}</span>
@@ -159,7 +161,7 @@ export default function DashboardLayout({
               <span className="text-sm text-gray-700 mr-4 hidden sm:block">
                 {isDevMode() ? '🔧 ' : ''}{displayName}
               </span>
-              <button onClick={handleLogout} className="btn btn-secondary text-sm">
+              <button onClick={handleLogout} className="btn btn-outline text-sm">
                 Logout
               </button>
             </div>
