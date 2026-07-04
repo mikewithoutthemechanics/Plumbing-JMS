@@ -38,7 +38,7 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], recentAudi
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-plumber-primary to-plumber-accent">
+        <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-[var(--plumber-primary)] to-[var(--plumber-accent)]">
           Punctual Plumbers Dashboard
         </h1>
         <div className="text-sm text-gray-500">{new Date().toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>

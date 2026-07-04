@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getPendingSyncItems } from '@/lib/db/dexie';
 
 export default function OfflineIndicator() {
@@ -83,8 +83,8 @@ export default function OfflineIndicator() {
           <>
             <span className="text-sm font-medium">🟢 Online</span>
             {pendingCount > 0 && (
-              <button onClick={syncNow} disabled={syncing} className="btn btn-outline px-3 py-1 text-xs hover:bg-plumber-secondary/5">
-                {syncing ? <span className="animate-spin h-3 w-3 mr-1"></span>Syncing... : `Sync ${pendingCount}`}
+              <button onClick={syncNow} disabled={syncing} className="btn btn-outline px-3 py-1 text-xs hover:bg-[var(--plumber-secondary)]/5">
+                {syncing ? <span className="animate-spin h-3 w-3 mr-1" /> : ''}{syncing ? 'Syncing...' : `Sync ${pendingCount}`}
               </button>
             )}
           </>

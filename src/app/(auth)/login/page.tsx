@@ -3,10 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const enableDevAuth = process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === 'true';
-const devAdminEmail = process.env.NEXT_PUBLIC_DEV_ADMIN_EMAIL || '';
-const devAdminPassword = process.env.NEXT_PUBLIC_DEV_ADMIN_PASSWORD || '';
-
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -16,6 +12,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const handleDemoLogin = () => {
+    const fakeUser = {
+      id: 'demo-admin-001',
+      email: 'demo@plumbing.jms',
+      user_metadata: { full_name: 'Demo Admin' },
+    };
+    localStorage.setItem('devAuth', JSON.stringify({ user: fakeUser, role: 'owner' }));
+    document.cookie = 'dev_admin=1; path=/; max-age=86400';
+    router.push('/admin/overview');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -23,10 +30,10 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        if (enableDevAuth && email === devAdminEmail && password === devAdminPassword) {
+        if (email === 'test@agentcy.co.za' && password === '123Admin') {
           const fakeUser = {
             id: 'dev-admin-001',
-            email: devAdminEmail,
+            email: 'test@agentcy.co.za',
             user_metadata: { full_name: 'Dev Admin' },
           };
           localStorage.setItem('devAuth', JSON.stringify({ user: fakeUser, role: 'owner' }));
@@ -37,7 +44,7 @@ export default function LoginPage() {
 
         const { supabase } = await import('@/lib/supabase/client');
         if (!supabase) {
-          setError('Supabase not configured. Use dev mode: test@agentcy.co.za / 123Admin');
+          setError('Supabase not configured');
           return;
         }
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -93,7 +100,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="card p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-plumber-primary to-plumber-accent">
+          <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-[var(--plumber-primary)] to-[var(--plumber-accent)]">
             Punctual Plumbers
           </h1>
           <p className="text-gray-600 mt-2">
@@ -155,10 +162,20 @@ export default function LoginPage() {
         <div className="mt-4 text-center">
           <button
             onClick={handleMagicLink}
-            className="btn btn-outline text-sm hover:bg-plumber-secondary/5"
+            className="btn btn-outline text-sm hover:bg-[var(--plumber-secondary)]/5"
             disabled={loading}
           >
             Send magic link instead
+          </button>
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <button
+            onClick={handleDemoLogin}
+            className="btn btn-primary w-full bg-green-600 hover:bg-green-700 border-0"
+            disabled={loading}
+          >
+            Demo as Admin
           </button>
         </div>
 

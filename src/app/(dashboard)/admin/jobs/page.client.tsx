@@ -132,7 +132,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-plumber-primary to-plumber-accent">
+        <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-[var(--plumber-primary)] to-[var(--plumber-accent)]">
           Job Cards
         </h1>
         <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">

@@ -130,12 +130,12 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white/50 background-pattern">
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-plumber-secondary/20">
+      <nav className="bg-white/80 backdrop-blur-sm border-b border-[var(--plumber-secondary)]/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-plumber-primary to-plumber-accent">
+                <h1 className="text-xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-[var(--plumber-primary)] to-[var(--plumber-accent)]">
                   Punctual Plumbers
                 </h1>
               </div>
@@ -147,8 +147,8 @@ export default function DashboardLayout({
                      aria-current={pathname.startsWith(item.href) ? 'page' : undefined}
                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                        pathname.startsWith(item.href)
-                         ? 'border-plumber-primary text-gray-900'
-                         : 'border-transparent text-gray-500 hover:border-plumber-secondary/50 hover:text-gray-700'
+                         ? 'border-[var(--plumber-primary)] text-gray-900'
+                         : 'border-transparent text-gray-500 hover:border-[var(--plumber-secondary)]/50 hover:text-gray-700'
                      }`}
                    >
                      <span className="mr-2">{item.icon}</span>

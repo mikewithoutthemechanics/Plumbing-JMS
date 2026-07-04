@@ -169,8 +169,21 @@ create table if not exists public.invoices (
   updated_at timestamptz default now() not null
 );
 
--- Quote requests from customers
-create table if not exists public.quotes (
+-- Suppliers for procurement
+create table if not exists public.suppliers (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text,
+  phone text,
+  whatsapp text,
+  address text,
+  is_active boolean not null default true,
+  created_at timestamptz default now() not null,
+  updated_at timestamptz default now() not null
+);
+
+-- Add supplier to materials
+alter table if exists public.materials add column if not exists supplier_id uuid references public.suppliers(id) on delete set null;
   id uuid primary key default gen_random_uuid(),
   customer_id uuid references public.customers(id) on delete set null,
   customer_name text,

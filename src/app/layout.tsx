@@ -6,18 +6,6 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Punctual Plumbers',
   description: 'Professional plumbing job management system',
-  icons: [
-    {
-      rel: 'icon',
-      type: 'image/svg+xml',
-      href: '/logo.svg'
-    },
-    {
-      rel: 'apple-touch-icon',
-      type: 'image/png',
-      href: '/logo.svg'
-    }
-  ],
   openGraph: {
     title: 'Punctual Plumbers',
     description: 'Professional plumbing job management system',

@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+@import "tailwindcss";
 
 :root {
   --foreground: #0f172a;
@@ -48,19 +48,19 @@ body {
     letter-spacing: -0.025em;
   }
   .btn-primary {
-    @apply bg-plumber-primary text-white hover:bg-plumber-secondary focus:ring-2 focus:ring-offset-2 focus:ring-plumber-accent;
+    @apply bg-[var(--plumber-primary)] text-white hover:bg-[var(--plumber-secondary)] focus:ring-2 focus:ring-offset-2 focus:ring-[var(--plumber-accent)];
   }
   .btn-secondary {
-    @apply bg-white text-plumber-primary border border-plumber-primary hover:bg-plumber-primary/5 focus:ring-2 focus-ring-offset-2 focus:ring-plumber-primary/20;
+    @apply bg-white text-[var(--plumber-primary)] border border-[var(--plumber-primary)] hover:bg-[var(--plumber-primary)]/5 focus:ring-2 focus:ring-offset-2 focus:ring-[var(--plumber-primary)]/20;
   }
   .btn-outline {
-    @apply border border-plumber-secondary/30 text-plumber-primary hover:bg-plumber-primary/5 hover:text-plumber-primary focus:ring-2 focus-ring-offset-2 focus:ring-plumber-primary/20;
+    @apply border border-[var(--plumber-secondary)]/30 text-[var(--plumber-primary)] hover:bg-[var(--plumber-primary)]/5 hover:text-[var(--plumber-primary)] focus:ring-2 focus:ring-offset-2 focus:ring-[var(--plumber-primary)]/20;
   }
   .btn-accent {
-    @apply bg-plumber-accent text-white hover:bg-plumber-accent/90 focus:ring-2 focus-ring-offset-2 focus:ring-plumber-accent/20;
+    @apply bg-[var(--plumber-accent)] text-white hover:bg-[var(--plumber-accent)]/90 focus:ring-2 focus:ring-offset-2 focus:ring-[var(--plumber-accent)]/20;
   }
   .input {
-    @apply block w-full rounded-md border border-plumber-secondary/20 px-4 py-3 focus:border-plumber-primary focus:outline-none focus:ring-2 focus-ring-offset-2 focus:ring-plumber-primary/20 text-sm shadow-sm hover:border-plumber-secondary/30 transition-all duration-200;
+    @apply block w-full rounded-md border border-[var(--plumber-secondary)]/20 px-4 py-3 focus:border-[var(--plumber-primary)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--plumber-primary)]/20 text-sm shadow-sm hover:border-[var(--plumber-secondary)]/30 transition-all duration-200;
     font-size: var(--font-size-md);
   }
   .label {
@@ -69,7 +69,7 @@ body {
     font-weight: 500;
   }
   .card {
-    @apply bg-white rounded-xl border border-plumber-secondary/10 shadow-sm hover:shadow-md transition-shadow duration-200;
+    @apply bg-white rounded-xl border border-[var(--plumber-secondary)]/10 shadow-sm hover:shadow-md transition-shadow duration-200;
     padding: 1.5rem;
   }
   .card-hover {
