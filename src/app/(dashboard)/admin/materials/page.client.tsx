@@ -13,12 +13,15 @@ export default function MaterialsClient({ initialMaterials }: Props) {
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'maintenance' | 'job_site'>('all');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     unit: 'each',
     admin_unit_price: '',
     quantity_on_hand: '',
+    category: 'maintenance' as 'maintenance' | 'job_site',
+    reorder_level: '',
     is_active: true,
   });
 
@@ -34,13 +37,14 @@ export default function MaterialsClient({ initialMaterials }: Props) {
       ...formData,
       admin_unit_price: parseFloat(formData.admin_unit_price),
       quantity_on_hand: parseFloat(formData.quantity_on_hand) || 0,
+      reorder_level: parseFloat(formData.reorder_level) || 0,
       description: formData.description || null,
     };
     const { error } = await supabase.from('materials').insert(materialData as never);
     if (error) alert('Error: ' + error.message);
     else {
       setShowModal(false);
-      setFormData({ name: '', description: '', unit: 'each', admin_unit_price: '', quantity_on_hand: '', is_active: true });
+      setFormData({ name: '', description: '', unit: 'each', admin_unit_price: '', quantity_on_hand: '', category: 'maintenance', reorder_level: '', is_active: true });
       refresh();
     }
     setLoading(false);
@@ -69,8 +73,12 @@ export default function MaterialsClient({ initialMaterials }: Props) {
     if (data) setMaterials(data as Material[]);
   };
 
-  const lowStockItems = materials.filter(m => m.quantity_on_hand <= 5);
-  const outOfStockItems = materials.filter(m => m.quantity_on_hand === 0);
+  const filteredMaterials = categoryFilter === 'all'
+    ? materials
+    : materials.filter(m => m.category === categoryFilter);
+
+  const lowStockItems = filteredMaterials.filter(m => m.quantity_on_hand <= (m.reorder_level || 5));
+  const outOfStockItems = filteredMaterials.filter(m => m.quantity_on_hand === 0);
 
   return (
     <div className="space-y-6">
@@ -104,11 +112,28 @@ export default function MaterialsClient({ initialMaterials }: Props) {
         <button onClick={() => setShowModal(true)} className="btn btn-primary">+ Add Material</button>
       </div>
 
+      <div className="flex flex-wrap gap-2 mb-4">
+        {(['all', 'maintenance', 'job_site'] as const).map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setCategoryFilter(cat)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              categoryFilter === cat
+                ? 'bg-blue-100 text-blue-800'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {cat === 'all' ? 'All' : cat === 'maintenance' ? 'Car Stock (Maintenance)' : 'Job-Site (Per Job)'}
+          </button>
+        ))}
+      </div>
+
       <div className="card overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price (ZAR)</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty on Hand</th>
@@ -116,9 +141,18 @@ export default function MaterialsClient({ initialMaterials }: Props) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {materials.map((material) => (
+            {filteredMaterials.map((material) => (
               <tr key={material.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{material.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    material.category === 'maintenance'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-purple-100 text-purple-800'
+                  }`}>
+                    {material.category === 'maintenance' ? 'Car Stock' : 'Job-Site'}
+                  </span>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{material.unit}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(material.admin_unit_price)}
@@ -156,7 +190,7 @@ export default function MaterialsClient({ initialMaterials }: Props) {
           </tbody>
         </table>
 
-        {materials.length === 0 && (
+        {filteredMaterials.length === 0 && (
           <div className="p-8 text-center text-gray-500">No materials found. Add your first material.</div>
         )}
       </div>
@@ -184,6 +218,17 @@ export default function MaterialsClient({ initialMaterials }: Props) {
                   className="input"
                   rows={2}
                 />
+              </div>
+              <div>
+                <label className="label">Category</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value as 'maintenance' | 'job_site' })}
+                  className="input"
+                >
+                  <option value="maintenance">Car Stock (kept on hand in the car)</option>
+                  <option value="job_site">Job-Site (bought for a specific job)</option>
+                </select>
               </div>
               <div>
                 <label className="label">Unit</label>
@@ -221,6 +266,16 @@ export default function MaterialsClient({ initialMaterials }: Props) {
                     onChange={(e) => setFormData({ ...formData, quantity_on_hand: e.target.value })}
                     className="input"
                     required
+                  />
+                </div>
+                <div>
+                  <label className="label">Reorder level</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.reorder_level}
+                    onChange={(e) => setFormData({ ...formData, reorder_level: e.target.value })}
+                    className="input"
                   />
                 </div>
               </div>

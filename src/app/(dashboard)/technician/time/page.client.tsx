@@ -98,7 +98,7 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
           <h3 className="font-semibold text-gray-900 mb-4">Active Jobs — Tap to Clock In</h3>
           <div className="space-y-2">
             {jobs
-              .filter(j => ['assigned', 'in_progress'].includes(j.status))
+              .filter(j => ['assigned', 'completed', 'to_be_invoiced'].includes(j.status))
               .map((job) => (
                 <div
                   key={job.id}

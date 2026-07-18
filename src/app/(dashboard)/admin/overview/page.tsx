@@ -23,7 +23,7 @@ export default async function AdminOverviewPage() {
   const [{ data: jobs }, { data: recentAudits }, { data: lowStock }] = await Promise.all([
     supabase.from('job_cards').select('status, grand_total, created_at').order('created_at', { ascending: false }).limit(10),
     supabase.from('audit_log').select('*').order('changed_at', { ascending: false }).limit(10),
-    supabase.from('materials').select('id, name, unit, quantity_on_hand, admin_unit_price, is_active, created_at, updated_at').lte('quantity_on_hand', 5).eq('is_active', true),
+    supabase.from('materials').select('id, name, unit, quantity_on_hand, admin_unit_price, category, reorder_level, is_active, created_at, updated_at').lte('quantity_on_hand', 5).eq('is_active', true),
   ]);
 
   return (

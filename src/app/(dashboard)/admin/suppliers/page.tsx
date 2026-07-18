@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { Profile } from '@/types';
 
 interface Props {
@@ -6,7 +6,7 @@ interface Props {
 }
 
 export default async function SuppliersPage({ initialSuppliers = [] }: Props) {
-  const supabase = await createServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user?.id as string).single() as { data: Profile };
 

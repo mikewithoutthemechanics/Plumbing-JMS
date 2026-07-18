@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         const { data: activeJobCounts } = await supabase
           .from('job_cards')
           .select('assigned_to')
-          .in('status', ['assigned', 'in_progress']);
+          .in('status', ['assigned', 'completed', 'to_be_invoiced']);
 
         const counts: Record<string, number> = {};
         (activeJobCounts || []).forEach(j => { if (j.assigned_to) counts[j.assigned_to] = (counts[j.assigned_to] || 0) + 1; });
