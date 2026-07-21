@@ -5,8 +5,8 @@ import { logAudit } from '@/lib/utils/audit';
 function invoiceNumber(): string {
   const d = new Date();
   const ym = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
-  const rand = Math.floor(Math.random() * 9000 + 1000);
-  return `INV-${ym}-${rand}`;
+  const unique = Math.random().toString(36).slice(2, 8);
+  return `INV-${ym}-${unique}`;
 }
 
 // GET /api/invoices?customerId=...  -> list invoices (owner/accountant)

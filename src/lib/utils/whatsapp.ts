@@ -24,18 +24,27 @@ export async function sendWhatsappMessage(
   const number = to.replace(/[^\d]/g, '');
   const url = `${config.baseUrl.replace(/\/$/, '')}/api/${config.sessionName}/sendText`;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chatId: `${number}@c.us`, text: message }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       return { success: false, error: `OpenWA ${res.status}: ${text.slice(0, 200)}` };
     }
     return { success: true };
   } catch (e) {
+    clearTimeout(timeout);
+    if (e instanceof Error && e.name === 'AbortError') {
+      return { success: false, error: 'OpenWA request timed out after 10s' };
+    }
     return { success: false, error: e instanceof Error ? e.message : 'Network error' };
   }
 }

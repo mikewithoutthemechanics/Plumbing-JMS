@@ -50,8 +50,12 @@ alter table public.job_materials
   add column if not exists claimed_at timestamptz;
 
 -- ===========================================================
--- 4. Job status: drop 'in_progress', add 'to_be_invoiced'
+-- 4. Job status: migrate 'in_progress' to 'completed', add 'to_be_invoiced'
 -- ===========================================================
+update public.job_cards
+  set status = 'completed'
+  where status = 'in_progress';
+
 alter table public.job_cards drop constraint if exists job_cards_status_check;
 alter table public.job_cards
   add constraint job_cards_status_check
