@@ -32,7 +32,7 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], recentAudi
   }, []);
 
   const pending = jobs.filter(j => j.status === 'pending').length;
-  const inProgress = jobs.filter(j => j.status === 'in_progress').length;
+  const toBeInvoiced = jobs.filter(j => j.status === 'to_be_invoiced').length;
   const invoiced = jobs.filter(j => j.status === 'invoiced').length;
 
   return (
@@ -56,9 +56,9 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], recentAudi
           <div className="text-xs text-gray-400 mt-1">Awaiting assignment</div>
         </div>
         <div className="card p-5">
-          <div className="text-sm font-medium text-gray-500">In Progress</div>
-          <div className="text-3xl font-bold text-blue-600 mt-1">{inProgress}</div>
-          <div className="text-xs text-gray-400 mt-1">Active work</div>
+          <div className="text-sm font-medium text-gray-500">To Be Invoiced</div>
+          <div className="text-3xl font-bold text-blue-600 mt-1">{toBeInvoiced}</div>
+          <div className="text-xs text-gray-400 mt-1">Ready to invoice</div>
         </div>
         <div className="card p-5">
           <div className="text-sm font-medium text-gray-500">Invoiced</div>

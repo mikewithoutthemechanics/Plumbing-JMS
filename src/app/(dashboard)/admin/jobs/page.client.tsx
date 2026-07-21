@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { formatDateTime } from '@/lib/utils/calculations';
 import { JOB_STATE_LABELS, JOB_STATES } from '@/lib/constants/job-states';
 import type { JobCard, Customer, Profile, BankingDetails } from '@/types';
@@ -17,11 +18,15 @@ interface Props {
 }
 
 export default function AdminJobsClient({ initialJobs }: Props) {
+  const router = useRouter();
   const [jobs, setJobs] = useState<AdminJobCard[]>(initialJobs);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [technicians, setTechnicians] = useState<Profile[]>([]);
   const [banking, setBanking] = useState<BankingDetails | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [clientLoading, setClientLoading] = useState(false);
+  const [clientForm, setClientForm] = useState({ name: '', email: '', phone: '', address: '', notes: '' });
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [formData, setFormData] = useState({
@@ -86,6 +91,33 @@ export default function AdminJobsClient({ initialJobs }: Props) {
       refreshJobs();
     }
     setLoading(false);
+  };
+
+  const handleCreateClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setClientLoading(true);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) { setClientLoading(false); return; }
+    const { data, error } = await supabase
+      .from('customers')
+      .insert({
+        name: clientForm.name,
+        email: clientForm.email || null,
+        phone: clientForm.phone || null,
+        address: clientForm.address,
+        notes: clientForm.notes || null,
+      } as never)
+      .select()
+      .single();
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
+      setCustomers([...customers, data as Customer]);
+      setFormData({ ...formData, customer_id: (data as Customer).id });
+      setShowClientModal(false);
+      setClientForm({ name: '', email: '', phone: '', address: '', notes: '' });
+    }
+    setClientLoading(false);
   };
 
   const advanceState = async (jobId: string, newStatus: JobState) => {
@@ -168,7 +200,11 @@ export default function AdminJobsClient({ initialJobs }: Props) {
 
       <div className="grid gap-4">
         {filteredJobs.map((job) => (
-          <div key={job.id} className="card p-4">
+          <div
+            key={job.id}
+            onClick={() => router.push(`/admin/jobs/${job.id}`)}
+            className="card p-4 cursor-pointer hover:shadow-md transition-shadow"
+          >
             <div className="flex flex-col sm:flex-row justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
@@ -185,7 +221,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
                 <p className="text-gray-400 text-xs mt-2">{formatDateTime(job.created_at)}</p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                 {job.status !== 'invoiced' && (
                   <StateControls job={job as JobCard & { status: JobState }} onAdvance={advanceState} loading={loading} />
                 )}
@@ -217,17 +253,26 @@ export default function AdminJobsClient({ initialJobs }: Props) {
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="label">Customer</label>
-                <select
-                  value={formData.customer_id}
-                  onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
-                  className="input"
-                  required
-                >
-                  <option value="">Select customer...</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    value={formData.customer_id}
+                    onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
+                    className="input"
+                    required
+                  >
+                    <option value="">Select customer...</option>
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowClientModal(true)}
+                    className="btn btn-secondary whitespace-nowrap"
+                  >
+                    + New Client
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -283,6 +328,44 @@ export default function AdminJobsClient({ initialJobs }: Props) {
                   {loading ? 'Creating...' : 'Create Job'}
                 </button>
                 <button type="button" onClick={() => setShowCreateModal(false)} className="btn btn-secondary">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showClientModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="card p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">New Client</h2>
+            <form onSubmit={handleCreateClient} className="space-y-4">
+              <div>
+                <label className="label">Name</label>
+                <input type="text" value={clientForm.name} onChange={(e) => setClientForm({ ...clientForm, name: e.target.value })} className="input" required />
+              </div>
+              <div>
+                <label className="label">Email</label>
+                <input type="email" value={clientForm.email} onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })} className="input" />
+              </div>
+              <div>
+                <label className="label">Phone</label>
+                <input type="tel" value={clientForm.phone} onChange={(e) => setClientForm({ ...clientForm, phone: e.target.value })} className="input" />
+              </div>
+              <div>
+                <label className="label">Address</label>
+                <textarea value={clientForm.address} onChange={(e) => setClientForm({ ...clientForm, address: e.target.value })} className="input" rows={2} required />
+              </div>
+              <div>
+                <label className="label">Notes</label>
+                <textarea value={clientForm.notes} onChange={(e) => setClientForm({ ...clientForm, notes: e.target.value })} className="input" rows={2} />
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" className="btn btn-primary flex-1" disabled={clientLoading}>
+                  {clientLoading ? 'Saving...' : 'Save Client'}
+                </button>
+                <button type="button" onClick={() => setShowClientModal(false)} className="btn btn-secondary">
                   Cancel
                 </button>
               </div>

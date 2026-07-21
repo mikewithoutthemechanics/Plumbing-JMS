@@ -47,13 +47,15 @@ export async function POST(request: NextRequest) {
   for (const item of itemMaterials) {
     const mat = materials?.find(m => m.id === item.material_id);
     if (mat?.suppliers) {
-      const sup = mat.suppliers;
-      if (!supplierItems.has(sup.name)) {
+      const sup = Array.isArray(mat.suppliers) ? mat.suppliers[0] : mat.suppliers;
+      if (sup && !supplierItems.has(sup.name)) {
         supplierItems.set(sup.name, { supplier: sup, items: [] });
       }
-      supplierItems.get(sup.name)?.items.push(
-        `${mat.name} (${item.quantity} ${mat.unit})`
-      );
+      if (sup) {
+        supplierItems.get(sup.name)?.items.push(
+          `${mat.name} (${item.quantity} ${mat.unit})`
+        );
+      }
     }
   }
 

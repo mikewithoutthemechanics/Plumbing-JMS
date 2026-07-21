@@ -99,6 +99,7 @@ export default function DashboardLayout({
           { href: '/admin/staff', label: 'Staff', icon: '👷' },
           { href: '/admin/customers', label: 'Customers', icon: '👥' },
           { href: '/admin/materials', label: 'Materials', icon: '📦' },
+          { href: '/admin/whatsapp', label: 'WhatsApp', icon: '💬' },
         ];
       case 'technician':
         return [
@@ -109,6 +110,7 @@ export default function DashboardLayout({
       case 'accountant':
         return [
           { href: '/accountant/jobs', label: 'Job Cards', icon: '📄' },
+          { href: '/accountant/debtors', label: 'Debtors', icon: '💰' },
           { href: '/accountant/exports', label: 'Exports', icon: '📥' },
         ];
       default:

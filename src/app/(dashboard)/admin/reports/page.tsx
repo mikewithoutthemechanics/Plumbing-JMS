@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 const MOCK_JOBS = [
   { status: 'pending', grand_total: 0 },
   { status: 'assigned', grand_total: 0 },
-  { status: 'in_progress', grand_total: 1920.5 },
+  { status: 'to_be_invoiced', grand_total: 1920.5 },
   { status: 'completed', grand_total: 983.25 },
   { status: 'invoiced', grand_total: 983.25 },
 ];
@@ -30,12 +30,12 @@ export default async function AdminReportsPage() {
   }
 
   const summary = jobs.reduce((acc, job) => {
-    const status = job.status as 'pending' | 'assigned' | 'in_progress' | 'completed' | 'invoiced';
+    const status = job.status as 'pending' | 'assigned' | 'completed' | 'to_be_invoiced' | 'invoiced';
     acc[status] = (acc[status] || 0) + 1;
     acc.total += job.grand_total;
     if (status === 'invoiced') acc.invoicedTotal += job.grand_total;
     return acc;
-  }, { total: 0, invoicedTotal: 0, pending: 0, assigned: 0, in_progress: 0, completed: 0, invoiced: 0 });
+  }, { total: 0, invoicedTotal: 0, pending: 0, assigned: 0, to_be_invoiced: 0, completed: 0, invoiced: 0 });
 
   return (
     <div className="space-y-6">
@@ -63,7 +63,7 @@ export default async function AdminReportsPage() {
       <div className="card p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Jobs by Status</h3>
         <div className="space-y-3">
-          {(['pending', 'assigned', 'in_progress', 'completed', 'invoiced'] as const).map((status) => (
+          {(['pending', 'assigned', 'completed', 'to_be_invoiced', 'invoiced'] as const).map((status) => (
             <div key={status} className="flex justify-between items-center">
               <span className="text-sm font-medium text-gray-700">{status.replace('_', ' ')}</span>
               <span className="text-sm font-semibold text-gray-900">{(summary as Record<string, number>)[status] || 0} jobs</span>

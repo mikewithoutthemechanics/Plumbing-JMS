@@ -27,9 +27,13 @@ export interface Material {
   admin_unit_price: number;
   quantity_on_hand: number;
   is_active: boolean;
+  category: 'maintenance' | 'job_site';
+  reorder_level: number;
   created_at: string;
   updated_at: string;
 }
+
+export type MaterialCategory = 'maintenance' | 'job_site';
 
 export interface JobCard {
   id: string;
@@ -55,7 +59,7 @@ export interface JobCard {
   assigned_to_profile?: { full_name: string; email: string };
 }
 
-export type JobState = 'pending' | 'assigned' | 'in_progress' | 'completed' | 'invoiced';
+export type JobState = 'pending' | 'assigned' | 'completed' | 'to_be_invoiced' | 'invoiced';
 
 export interface JobMaterial {
   id: string;
@@ -65,8 +69,80 @@ export interface JobMaterial {
   quantity: number;
   admin_unit_price: number;
   line_total: number;
+  bought: boolean;
+  claimed: boolean;
+  bought_at?: string;
+  claimed_at?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface JobTender {
+  id: string;
+  job_card_id: string;
+  file_name: string;
+  file_path: string;
+  file_type?: string;
+  file_size?: number;
+  uploaded_by?: string;
+  created_at: string;
+}
+
+export interface Invoice {
+  id: string;
+  job_card_id: string;
+  customer_id: string;
+  invoice_number: string;
+  amount_due: number;
+  vat_amount: number;
+  amount_paid: number;
+  status: 'unpaid' | 'partial' | 'paid' | 'overdue';
+  due_date?: string;
+  issued_at: string;
+  paid_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Payment {
+  id: string;
+  invoice_id: string;
+  customer_id: string;
+  amount: number;
+  method: 'cash' | 'card' | 'eft' | 'other';
+  recorded_by?: string;
+  note?: string;
+  created_at: string;
+}
+
+export interface JobSignature {
+  id: string;
+  job_card_id: string;
+  customer_id?: string;
+  signatory_name?: string;
+  signature_data: string;
+  created_at: string;
+}
+
+export interface WhatsappConfig {
+  id: string;
+  base_url: string;
+  session_name: string;
+  enabled: boolean;
+  reminder_template: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WhatsappMessage {
+  id: string;
+  invoice_id?: string;
+  customer_id?: string;
+  to_number: string;
+  message: string;
+  status: 'pending' | 'sent' | 'failed';
+  error?: string;
+  created_at: string;
 }
 
 export interface TimeLog {
@@ -147,20 +223,6 @@ export interface Communication {
   summary: string;
   timestamp: string;
   recorded_by?: string;
-}
-
-export interface Invoice {
-  id: string;
-  job_card_id: string;
-  invoice_number: string;
-  amount_due: number;
-  vat_amount: number;
-  due_date: string;
-  status: 'pending' | 'sent' | 'paid' | 'overdue';
-  sent_at?: string;
-  paid_at?: string;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface Quote {

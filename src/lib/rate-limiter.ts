@@ -41,7 +41,7 @@ export async function checkRateLimit(key: string): Promise<{
   // Upsert the record
   await supabase
     .from('rate_limits')
-    .upsert({ key, count, reset_at: new Date(resetAt).toISOString() }, { onConflict: ['key'] });
+    .upsert({ key, count, reset_at: new Date(resetAt).toISOString() }, { onConflict: 'key' });
 
   const allowed = count <= MAX_ATTEMPTS;
   const remaining = Math.max(0, MAX_ATTEMPTS - count);

@@ -32,7 +32,7 @@ export default async function TechnicianMaterialsPage() {
     .from('job_cards')
     .select('id, job_number, description, status')
     .eq('assigned_to', user.id)
-    .in('status', ['assigned', 'in_progress']);
+    .in('status', ['assigned', 'completed', 'to_be_invoiced']);
 
   const { data: materials } = await supabase
     .from('materials')

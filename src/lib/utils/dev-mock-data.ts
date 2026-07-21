@@ -12,7 +12,7 @@ export function getMockJobs(): JobCard[] {
       job_number: 'JOB-MOCK-001',
       customer_id: 'mock-cust-1',
       assigned_to: 'dev-admin-001',
-      status: 'in_progress',
+      status: 'completed',
       description: 'Burst pipe in kitchen',
       admin_hourly_rate: 450,
       labour_cost: 1350,
@@ -83,9 +83,9 @@ export function getMockCustomers(): Customer[] {
 
 export function getMockMaterials(): Material[] {
   return [
-    { id: 'mock-mat-1', name: 'PVC Pipe 110mm', description: 'Standard drainage pipe', unit: 'meter', admin_unit_price: 45, quantity_on_hand: 50, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'mock-mat-2', name: 'Copper Pipe 15mm', description: 'Hot water pipe', unit: 'meter', admin_unit_price: 65, quantity_on_hand: 30, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    { id: 'mock-mat-3', name: 'Silicone Sealant', description: 'Clear bathroom sealant', unit: 'tube', admin_unit_price: 28, quantity_on_hand: 100, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 'mock-mat-1', name: 'PVC Pipe 110mm', description: 'Standard drainage pipe', unit: 'meter', admin_unit_price: 45, quantity_on_hand: 50, category: 'maintenance', reorder_level: 10, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 'mock-mat-2', name: 'Copper Pipe 15mm', description: 'Hot water pipe', unit: 'meter', admin_unit_price: 65, quantity_on_hand: 30, category: 'maintenance', reorder_level: 10, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: 'mock-mat-3', name: 'Silicone Sealant', description: 'Clear bathroom sealant', unit: 'tube', admin_unit_price: 28, quantity_on_hand: 100, category: 'maintenance', reorder_level: 20, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
   ];
 }
 

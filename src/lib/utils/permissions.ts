@@ -30,7 +30,7 @@ export function canAccessJob(role: UserRole, jobStatus: string, isAssignedTo: bo
     case 'technician':
       if (!isAssignedTo) return false;
       if (jobStatus === 'invoiced') return true;
-      if (['assigned', 'in_progress', 'completed'].includes(jobStatus)) return true;
+      if (['assigned', 'completed', 'to_be_invoiced'].includes(jobStatus)) return true;
       return false;
     case 'accountant':
       return jobStatus === 'invoiced' || jobStatus === 'completed';
@@ -51,9 +51,9 @@ export function canAdvanceState(role: UserRole, fromState: string, toState: stri
   if (role !== 'owner') return false;
   const allowed: Record<string, string[]> = {
     pending: ['assigned'],
-    assigned: ['in_progress'],
-    in_progress: ['completed'],
-    completed: ['invoiced'],
+    assigned: ['completed'],
+    completed: ['to_be_invoiced'],
+    to_be_invoiced: ['invoiced'],
     invoiced: [],
   };
   return allowed[fromState]?.includes(toState) ?? false;
