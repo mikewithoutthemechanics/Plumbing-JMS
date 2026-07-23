@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limiter";
 
+// Security headers helper
+const addSecurityHeaders = (response: NextResponse) => {
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  // Additional recommended headers
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+  response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  return response;
+};
+
 export async function middleware(request: NextRequest) {
   try {
     // Request logging (dev only)
@@ -18,9 +29,8 @@ export async function middleware(request: NextRequest) {
         origin &&
         new URL(origin).origin !== new URL(allowedOrigin).origin
       ) {
-        return NextResponse.json(
-          { error: "Invalid origin" },
-          { status: 403 },
+        return addSecurityHeaders(
+          NextResponse.json({ error: "Invalid origin" }, { status: 403 })
         );
       }
     }
@@ -41,9 +51,11 @@ export async function middleware(request: NextRequest) {
       const rateKey = `rate:${request.nextUrl.pathname}:${ip}`;
       const rateCheck = await checkRateLimit(rateKey);
       if (!rateCheck.allowed) {
-        return NextResponse.json(
-          { error: "Too many requests" },
-          { status: 429 },
+        return addSecurityHeaders(
+          NextResponse.json(
+            { error: "Too many requests" },
+            { status: 429 }
+          )
         );
       }
     }
@@ -52,7 +64,7 @@ export async function middleware(request: NextRequest) {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.next();
+      return addSecurityHeaders(NextResponse.next());
     }
 
     const { createServerClient } = await import("@supabase/ssr");
@@ -74,12 +86,16 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname === "/";
 
     if (!user && !isPublicRoute) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return addSecurityHeaders(
+        NextResponse.redirect(new URL("/login", request.url))
+      );
     }
 
     if (user && isPublicRoute) {
-      return NextResponse.redirect(
-        new URL("/admin/overview", request.url),
+      return addSecurityHeaders(
+        NextResponse.redirect(
+          new URL("/admin/overview", request.url)
+        )
       );
     }
 
@@ -101,24 +117,30 @@ export async function middleware(request: NextRequest) {
         role === "owner" &&
         request.nextUrl.pathname.startsWith("/technician")
       ) {
-        return NextResponse.redirect(
-          new URL("/admin/jobs", request.url),
+        return addSecurityHeaders(
+          NextResponse.redirect(
+            new URL("/admin/jobs", request.url)
+          )
         );
       }
       if (
         role === "technician" &&
         request.nextUrl.pathname.startsWith("/admin")
       ) {
-        return NextResponse.redirect(
-          new URL("/technician/jobs", request.url),
+        return addSecurityHeaders(
+          NextResponse.redirect(
+            new URL("/technician/jobs", request.url)
+          )
         );
       }
       if (
         role === "accountant" &&
         !request.nextUrl.pathname.startsWith("/accountant")
       ) {
-        return NextResponse.redirect(
-          new URL("/accountant/jobs", request.url),
+        return addSecurityHeaders(
+          NextResponse.redirect(
+            new URL("/accountant/jobs", request.url)
+          )
         );
       }
     }
@@ -126,10 +148,10 @@ export async function middleware(request: NextRequest) {
     if (process.env.NODE_ENV !== "production") {
       console.error("[Middleware] Error:", err);
     }
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   }
 
-  return NextResponse.next();
+  return addSecurityHeaders(NextResponse.next());
 }
 
 export const config = {

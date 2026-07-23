@@ -1,13 +1,25 @@
+import { z } from 'zod';
+
+// Define the schema for job input validation
+const jobInputSchema = z.object({
+  admin_hourly_rate: z.number().nonnegative().optional(),
+  // Add other fields as needed
+  // For example:
+  // customer_name: z.string().min(1),
+  // job_description: z.string().min(1),
+});
+
 export function validateJobInput(data: any): string[] {
-  const errors: string[] = [];
-
-  if (data.admin_hourly_rate !== undefined) {
-    if (typeof data.admin_hourly_rate !== 'number' || isNaN(data.admin_hourly_rate) || data.admin_hourly_rate < 0) {
-      errors.push('admin_hourly_rate must be a non-negative number');
+  try {
+    // Attempt to parse the data with the schema
+    jobInputSchema.parse(data);
+    return []; // No errors
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      // Return the error messages
+      return error.errors.map((err) => `${err.path.join('.')}: ${err.message}`);
     }
+    // If it's not a Zod error, throw it
+    throw error;
   }
-
-  // Include other numeric validations as needed in the future
-
-  return errors;
 }

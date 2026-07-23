@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "your-username"  # Optional: specify reviewers for PRs
+    labels:
+      - "dependencies"
+    assignees:
+      - "your-username"  # Optional: assign to a user
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps"
+      prefix-prod: "deps"
+      include: "scope"

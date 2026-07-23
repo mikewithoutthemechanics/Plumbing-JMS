@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { LOCAL_STORAGE_KEYS } from '@/lib/constants/storage';
 
 interface DevAuth {
   user: { id: string; email: string; user_metadata: { full_name: string } };
@@ -12,12 +13,12 @@ interface DevAuth {
 
 function isDevMode(): boolean {
   if (typeof window === 'undefined') return false;
-  return localStorage.getItem('devAuth') !== null;
+  return localStorage.getItem(LOCAL_STORAGE_KEYS.DEV_AUTH) !== null;
 }
 
 function getDevAuth(): DevAuth | null {
   if (typeof window === 'undefined') return null;
-  const stored = localStorage.getItem('devAuth');
+  const stored = localStorage.getItem(LOCAL_STORAGE_KEYS.DEV_AUTH);
   if (!stored) return null;
   try {
     return JSON.parse(stored) as DevAuth;

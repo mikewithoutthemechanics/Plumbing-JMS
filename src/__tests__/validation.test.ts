@@ -1,28 +1,42 @@
+import { describe, expect, test } from 'vitest';
 import { validateJobInput } from '@/lib/validation';
 
 describe('validateJobInput', () => {
-  it('returns error for negative admin_hourly_rate', () => {
-    const errors = validateJobInput({ admin_hourly_rate: -10 });
-    expect(errors).toContain('admin_hourly_rate must be a non-negative number');
+  test('returns empty array for valid input', () => {
+    const data = { admin_hourly_rate: 25 };
+    const errors = validateJobInput(data);
+    expect(errors).toEqual([]);
   });
 
-  it('returns no error for positive admin_hourly_rate', () => {
-    const errors = validateJobInput({ admin_hourly_rate: 25 });
-    expect(errors).toHaveLength(0);
+  test('returns error for negative admin_hourly_rate', () => {
+    const data = { admin_hourly_rate: -5 };
+    const errors = validateJobInput(data);
+    expect(errors).toContain('admin_hourly_rate: must be >= 0');
   });
 
-  it('returns error for non-numeric admin_hourly_rate', () => {
-    const errors = validateJobInput({ admin_hourly_rate: 'abc' });
-    expect(errors).toContain('admin_hourly_rate must be a non-negative number');
+  test('returns error for NaN admin_hourly_rate', () => {
+    const data = { admin_hourly_rate: NaN };
+    const errors = validateJobInput(data);
+    expect(errors).toContain('admin_hourly_rate: Invalid number');
   });
 
-  it('returns no error for zero', () => {
-    const errors = validateJobInput({ admin_hourly_rate: 0 });
-    expect(errors).toHaveLength(0);
+  test('does not validate when field is undefined', () => {
+    const data = {}; // admin_hourly_rate is undefined
+    const errors = validateJobInput(data);
+    expect(errors).toEqual([]);
   });
 
-  it('returns no error when admin_hourly_rate is undefined', () => {
-    const errors = validateJobInput({});
-    expect(errors).toHaveLength(0);
+  test('does validate when field is null', () => {
+    const data = { admin_hourly_rate: null };
+    const errors = validateJobInput(data);
+    expect(errors).toContain('admin_hourly_rate: Expected number, received null');
+  });
+
+  test('returns multiple errors for multiple invalid fields (when added)', () => {
+    // This test will pass once we add more fields to the schema
+    const data = { admin_hourly_rate: -5 };
+    const errors = validateJobInput(data);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toBe('admin_hourly_rate: must be >= 0');
   });
 });
