@@ -1,5 +1,5 @@
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
-import { logger } from './logger';
+import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals';
+import { logger } from '@/lib/logger';
 
 const reportWebVitals = (onPerfEntry?: (metric: any) => void) => {
   const handler = (metric: any) => {
@@ -17,13 +17,13 @@ const reportWebVitals = (onPerfEntry?: (metric: any) => void) => {
     }
   };
 
-  // Only set up the web-vitals listeners if we have either a user handler or a logging endpoint
-  if (onPerfEntry || process.env.NEXT_PUBLIC_LOGGING_ENDPOINT) {
-    getCLS(handler);
-    getFID(handler);
-    getFCP(handler);
-    getLCP(handler);
-    getTTFB(handler);
+  // Only set up the web-vitals listeners if we are in the browser
+  if (typeof window !== 'undefined') {
+    onCLS(handler);
+    onFCP(handler);
+    onINP(handler);
+    onLCP(handler);
+    onTTFB(handler);
   }
 };
 

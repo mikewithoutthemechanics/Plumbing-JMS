@@ -1,26 +1,26 @@
 import { checkRateLimit, cleanupRateLimits } from './rate-limiter';
 
 // Mock the Supabase client
-vi.mock('@/lib/supabase/server', () => ({
-  getSupabaseAdminClient: vi.fn(),
+jest.mock('@/lib/supabase/server', () => ({
+  getSupabaseAdminClient: jest.fn(),
 }));
 
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 
 describe('rate limiter', () => {
   const mockSupabase = {
-    from: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    single: vi.fn(),
-    upsert: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    lt: vi.fn().mockReturnThis(),
+    from: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    single: jest.fn(),
+    upsert: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
+    lt: jest.fn().mockReturnThis(),
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    (getSupabaseAdminClient as Mock).mockResolvedValue(mockSupabase);
+    jest.clearAllMocks();
+    (getSupabaseAdminClient as jest.Mock).mockResolvedValue(mockSupabase);
   });
 
   describe('checkRateLimit', () => {

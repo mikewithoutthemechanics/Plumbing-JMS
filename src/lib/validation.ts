@@ -17,7 +17,7 @@ export function validateJobInput(data: any): string[] {
   } catch (error) {
     if (error instanceof z.ZodError) {
       // Return the error messages
-      return error.errors.map((err) => `${err.path.join('.')}: ${err.message}`);
+      return error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`);
     }
     // If it's not a Zod error, throw it
     throw error;

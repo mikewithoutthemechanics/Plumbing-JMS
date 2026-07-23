@@ -53,6 +53,7 @@ describe('/api/sync route', () => {
     const res = await POST(req)
 
     expect(res).toHaveProperty('status', 401)
+    // @ts-ignore: NextResponse.body is possibly null in the types, but we know it's not null in our mock
     expect(res.body.error).toBe('Unauthorized')
   })
 
@@ -64,6 +65,7 @@ describe('/api/sync route', () => {
     const res = await POST(req)
 
     expect(res).toHaveProperty('status', 403)
+    // @ts-ignore: NextResponse.body is possibly null in the types, but we know it's not null in our mock
     expect(res.body.error).toBe('Forbidden')
   })
 
@@ -91,6 +93,7 @@ describe('/api/sync route', () => {
     const res = await POST(req)
 
     expect(res).toHaveProperty('status', 201)
+    // @ts-ignore: NextResponse.body is possibly null in the types, but we know it's not null in our mock
     expect(res.body.quote).toEqual({ id: 'quote-id', customer_name: 'John Doe' })
   })
 
@@ -118,6 +121,7 @@ describe('/api/sync route', () => {
     const res = await POST(req)
 
     expect(res).toHaveProperty('status', 200)
+    // @ts-ignore: NextResponse.body is possibly null in the types, but we know it's not null in our mock
     expect(res.body.success).toBe(true)
   })
 })

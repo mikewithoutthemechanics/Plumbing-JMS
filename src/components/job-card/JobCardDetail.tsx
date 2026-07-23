@@ -2,16 +2,13 @@
 
 import { useState } from 'react';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
-import type { JobCard, JobMaterial, JobTender, JobSignature } from '@/types';
+import type { JobCard, JobMaterial, JobMaterialRow, JobTender, JobSignature } from '@/types';
 import StateControls from '@/components/job-card/StateControls';
 import MaterialSelector from '@/components/material-picker/MaterialSelector';
 import SignaturePad from '@/components/job-card/SignaturePad';
 import TenderUploadSection from '@/components/job-card/TenderUploadSection';
+import MaterialsTable from '@/components/job-card/MaterialsTable';
 import type { JobState } from '@/types';
-
-interface JobMaterialRow extends JobMaterial {
-  materials?: { name: string };
-}
 
 interface Props {
   job: JobCard & { customer?: { name: string }; assigned_to_profile?: { full_name: string } };

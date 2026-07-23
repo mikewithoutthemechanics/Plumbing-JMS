@@ -10,6 +10,14 @@ export const LogLevel = {
 
 type LogLevel = typeof LogLevel[keyof typeof LogLevel];
 
+// Reverse map for string representation
+const LogLevelName: Record<LogLevel, keyof typeof LogLevel> = {
+  [LogLevel.DEBUG]: 'DEBUG',
+  [LogLevel.INFO]: 'INFO',
+  [LogLevel.WARN]: 'WARN',
+  [LogLevel.ERROR]: 'ERROR',
+};
+
 // Configuration
 const LOG_LEVEL: LogLevel = process.env.NODE_ENV === 'production' ? LogLevel.INFO : LogLevel.DEBUG;
 const ENABLE_REMOTE_LOGGING = process.env.NEXT_PUBLIC_LOGGING_ENDPOINT ? true : false;
@@ -73,7 +81,7 @@ export function log(
 
   // Send to remote endpoint if configured
   sendToRemote({
-    level: LogLevel[level],
+    level: LogLevelName[level],
     message,
     timestamp,
     meta: Object.keys(meta).length ? meta : undefined,

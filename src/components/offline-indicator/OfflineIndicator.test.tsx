@@ -1,8 +1,7 @@
-import { render, screen, await cleanup } from '@testing-library/react'
+import { render, screen, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import OfflineIndicator from './OfflineIndicator'
 import { getPendingSyncItems } from '@/lib/db/dexie'
-import { setIsOnline } from '@/lib/db/dexie' // This is not real, but we'll mock the functions we need
 
 // Mock the getPendingSyncItems function
 jest.mock('@/lib/db/dexie', () => ({
@@ -76,4 +75,4 @@ describe('OfflineIndicator', () => {
     // Expect fetch to have been called
     expect(fetch).toHaveBeenCalled()
   })
-}
+})

@@ -77,6 +77,10 @@ export interface JobMaterial {
   updated_at: string;
 }
 
+export interface JobMaterialRow extends JobMaterial {
+  materials?: { name: string };
+}
+
 export interface JobTender {
   id: string;
   job_card_id: string;
