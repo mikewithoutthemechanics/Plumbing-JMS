@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import SessionHandler from '@/components/auth/SessionHandler';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -126,6 +127,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <SessionHandler />
       <div className="card p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-[var(--plumber-primary)] to-[var(--plumber-accent)]">
