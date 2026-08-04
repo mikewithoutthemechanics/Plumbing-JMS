@@ -83,6 +83,7 @@ export async function middleware(request: NextRequest) {
     const isPublicRoute =
       request.nextUrl.pathname.startsWith("/login") ||
       request.nextUrl.pathname.startsWith("/magic-link") ||
+      request.nextUrl.pathname.startsWith("/auth/callback") ||
       request.nextUrl.pathname === "/";
 
     if (!user && !isPublicRoute) {
