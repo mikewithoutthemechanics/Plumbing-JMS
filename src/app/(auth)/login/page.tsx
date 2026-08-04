@@ -147,20 +147,25 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div>
-              <label className="label">Full Name</label>
+              <label className="label" htmlFor="fullName">Full Name</label>
               <input
+                id="fullName"
+                name="fullName"
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="input"
                 required={!isLogin}
+                autoComplete="name"
               />
             </div>
           )}
 
           <div>
-            <label className="label">Email</label>
+            <label className="label" htmlFor="email">Email</label>
             <input
+              id="email"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -172,14 +177,16 @@ export default function LoginPage() {
 
           {isLogin && (
             <div>
-              <label className="label">Password</label>
+              <label className="label" htmlFor="password">Password</label>
               <input
+                id="password"
+                name="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input"
                 required={isLogin}
-                autoComplete="current-password"
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
               />
             </div>
           )}
