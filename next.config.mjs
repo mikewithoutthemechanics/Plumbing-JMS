@@ -4,4 +4,4 @@ const nextConfig = {
   // We'll try to let Next.js handle turbopack via environment variable
 }
 
-module.exports = nextConfig
+export default nextConfig

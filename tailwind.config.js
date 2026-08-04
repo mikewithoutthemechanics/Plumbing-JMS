@@ -1,10 +1,8 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const forms = require('@tailwindcss/forms');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const typography = require('@tailwindcss/typography');
+import forms from '@tailwindcss/forms';
+import typography from '@tailwindcss/typography';
 
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
     "./app/**/*.{js,ts,jsx,tsx}",
