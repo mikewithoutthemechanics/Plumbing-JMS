@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { getCustomer } from '@/lib/supabase/services';
-import type { Customer } from '@/lib/types';
 
 export function useCustomer(id: string) {
   return useQuery({

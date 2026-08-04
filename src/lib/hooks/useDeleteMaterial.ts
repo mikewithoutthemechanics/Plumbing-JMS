@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteMaterial } from '@/lib/supabase/services';
+import type { Material } from '@/lib/types';
 
 export function useDeleteMaterial() {
   const queryClient = useQueryClient();
@@ -9,7 +10,7 @@ export function useDeleteMaterial() {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['materials'] });
       const previousMaterials = queryClient.getQueryData(['materials']);
-      queryClient.setQueryData(['materials'], (old: any[] = []) =>
+      queryClient.setQueryData(['materials'], (old: Material[] = []) =>
         old.filter(material => material.id !== id)
       );
       return { previousMaterials };

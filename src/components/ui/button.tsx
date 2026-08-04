@@ -43,12 +43,12 @@ const Button = React.forwardRef<
   HTMLButtonElement | HTMLAnchorElement,
   ButtonProps
 >(({ className, variant, size, asChild = false, ...props }, ref) => {
-  const Component: any = asChild ? 'a' : 'button';
+  const Component = asChild ? 'a' : 'button';
   return (
     <Component
       className={twMerge(buttonVariants({ variant, size, className }))}
-      ref={ref as any}
-      {...props}
+      ref={ref as unknown as React.Ref<HTMLAnchorElement> & React.Ref<HTMLButtonElement>}
+      {...(props as React.HTMLAttributes<HTMLElement>)}
     />
   );
 });

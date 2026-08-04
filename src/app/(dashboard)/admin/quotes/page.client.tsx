@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { Quote } from '@/types';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -16,7 +15,6 @@ export default function AdminQuotesClient({ initialQuotes }: { initialQuotes: Qu
   const [quotes, setQuotes] = useState(initialQuotes);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [price, setPrice] = useState('');
-  const router = useRouter();
 
   const updateQuote = async (id: string, status: Quote['status'], estimated_price?: number) => {
     const { error } = await fetch('/api/quotes', {

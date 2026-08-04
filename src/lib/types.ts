@@ -56,16 +56,3 @@ export interface User {
   created_at: string;
   updated_at: string;
 }
-
-interface Database {
-  public: {
-    Tables: {
-      jobs: { Row: Job; Insert: Omit<Job, 'id'>; Update: Partial<Job> };
-      customers: { Row: Customer; Insert: Omit<Customer, 'id'>; Update: Partial<Customer> };
-      materials: { Row: Material; Insert: Omit<Material, 'id'>; Update: Partial<Material> };
-      users: { Row: User; Insert: Omit<User, 'id'>; Update: Partial<User> };
-    };
-  };
-}
-
-type TableName = keyof Database['public']['Tables'];

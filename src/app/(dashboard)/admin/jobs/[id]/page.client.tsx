@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import JobCardDetail from '@/components/job-card/JobCardDetail';
 import type { JobCard, JobMaterial, JobTender, JobSignature } from '@/types';
@@ -19,7 +19,7 @@ export default function AdminJobDetailClient({ jobId }: { jobId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const { supabase } = await import('@/lib/supabase/client');
     if (!supabase) return;
     const [{ data: jobData }, { data: matData }, { data: tenderData }, { data: sigData }] = await Promise.all([
@@ -32,12 +32,12 @@ export default function AdminJobDetailClient({ jobId }: { jobId: string }) {
     if (matData) setMaterials(matData as JobMaterialRow[]);
     if (tenderData) setTenders(tenderData as JobTender[]);
     if (sigData) setSignatures(sigData as JobSignature[]);
-  };
+  }, [jobId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
-  }, [jobId]);
+  }, [load]);
 
   const advance = async (id: string, newStatus: JobState) => {
     setLoading(true);

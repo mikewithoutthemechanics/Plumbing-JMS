@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { getMaterials } from '@/lib/supabase/services';
-import type { Material } from '@/lib/types';
 
 export function useMaterials(filters: [string, string, unknown][] = []) {
   return useQuery({

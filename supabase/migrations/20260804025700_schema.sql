@@ -1,13 +1,3 @@
-const { createClient } = require('@supabase/supabase-js');
-
-// Initialize Supabase client with service role key
-const supabaseUrl = 'https://mdyznqfzdqlbucoqksdv.supabase.co';
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1keXpucWZ6ZHFsYnVjb3Frc2R2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjczODI5NSwiZXhwIjoyMDk4MzE0Mjk1fQ.J2SluYl7__hqtFPL-W21U2jGUPhwupLNUF8gBXGggN8';
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-// SQL to execute
-const sql = `
 -- ===========================
 -- 1. Enable required extensions
 -- ===========================
@@ -42,7 +32,7 @@ create table if not exists public.customers (
 
 -- ===========================
 -- 4. Materials catalog
--- =========================================
+-- ===========================
 create table if not exists public.materials (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -269,7 +259,7 @@ create policy "Owner update job_materials" on public.job_materials for update wi
   exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
 );
 create policy "Owner delete job_materials" on public.job_materials for delete using (true);
-create policy "Technician insert job_materials" on public.job_materials for insert using (
+create policy "Technician insert job_materials" on public.job_materials for insert with check (
   exists (
     select 1 from public.job_cards jc
     join public.profiles p on p.id = auth.uid()
@@ -302,9 +292,9 @@ create policy "Owner insert sync_queue" on public.sync_queue for insert with che
 create policy "Owner update sync_queue" on public.sync_queue for update using (true);
 create policy "Owner delete sync_queue" on public.sync_queue for delete using (true);
 
-// ===========================
-// 14. Performance indexes
-// ===========================
+-- ===========================
+-- 14. Performance indexes
+-- ===========================
 create index if not exists idx_profiles_role on public.profiles(role);
 create index if not exists idx_job_cards_customer on public.job_cards(customer_id);
 create index if not exists idx_job_cards_assigned on public.job_cards(assigned_to);
@@ -314,18 +304,18 @@ create index if not exists idx_job_materials_material on public.job_materials(ma
 create index if not exists idx_time_logs_job on public.time_logs(job_card_id);
 create index if not exists idx_time_logs_tech on public.time_logs(technician_id);
 create index if not exists idx_materials_active on public.materials(is_active);
-create index if not exists idx_queue_status_ts on public.sync_queue(status, "timestamp");
+create index if not exists idx_sync_queue_status_ts on public.sync_queue(status, "timestamp");
 create index if not exists idx_audit_log_table_record on public.audit_log(table_name, record_id);
 create index if not exists idx_audit_log_changed_at on public.audit_log(changed_at desc);
 
-// ===========================
-// 15. Disable triggers on audit_log to prevent accidental modification
-// ===========================
-alter table public.audit_log disable trigger all;
+-- ===========================
+-- 15. Disable triggers on audit_log to prevent accidental modification
+-- ===========================
+-- Skip: system triggers cannot be disabled in local dev
 
-// ===========================
-// 16. Updated_at triggers
-// ===========================
+-- ===========================
+-- 16. Updated_at triggers
+-- ===========================
 create or replace function public.handle_updated_at()
 returns trigger as $$
 begin
@@ -342,55 +332,6 @@ create trigger set_updated_at before update on public.job_materials for each row
 create trigger set_updated_at before update on public.time_logs for each row execute function public.handle_updated_at();
 create trigger set_updated_at before update on public.banking_details for each row execute function public.handle_updated_at();
 
-// ===========================
-// 17. Insert the test owner profile (id matches the auth user we created)
-// ===========================
-insert into public.profiles (
-  id,
-  role,
-  full_name,
-  email,
-  created_at,
-  updated_at
-) values (
-  'ab8f1ae0-0a90-4f25-ab34-10dfd8aaf675',   -- auth user ID from earlier step
-  'owner',
-  'Test Owner',
-  'test@agentcy.co.za',
-  now(),
-  now()
-)
-on conflict (id) do update set
-  role = excluded.role,
-  full_name = excluded.full_name,
-  email = excluded.email,
-  updated_at = now();
-`;
-
-async function executeSql() {
-  try {
-    console.log('Executing SQL...');
-    const { data, error } = await supabase.rpc('exec_sql', { query: sql });
-
-    if (error) {
-      console.error('Error executing SQL:', error);
-      // Try alternative approach if rpc doesn't work
-      console.log('Trying direct SQL execution via postgrest...');
-      const { data: data2, error: error2 } = await supabase
-        .from('information_schema.tables')
-        .select('*')
-        .limit(1);
-
-      if (error2) {
-        console.error('Also failed:', error2);
-        return;
-      }
-    } else {
-      console.log('SQL executed successfully:', data);
-    }
-  } catch (err) {
-    console.error('Exception:', err);
-  }
-}
-
-executeSql();
+-- ===========================
+-- 17. (Test owner profile insert moved to seed.sql — auth user must exist first)
+-- ===========================

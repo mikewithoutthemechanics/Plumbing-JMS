@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createCustomer } from '@/lib/supabase/services';
+import type { Customer } from '@/lib/types';
 
 export function useCreateCustomer() {
   const queryClient = useQueryClient();
@@ -9,7 +10,7 @@ export function useCreateCustomer() {
     onMutate: async (newCustomer) => {
       await queryClient.cancelQueries({ queryKey: ['customers'] });
       const previousCustomers = queryClient.getQueryData(['customers']);
-      queryClient.setQueryData(['customers'], (old: any[] = []) => [
+      queryClient.setQueryData(['customers'], (old: Customer[] = []) => [
         ...old,
         newCustomer,
       ]);

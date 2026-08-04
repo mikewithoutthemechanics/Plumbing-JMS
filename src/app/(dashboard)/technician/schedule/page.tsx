@@ -23,11 +23,15 @@ export default async function TechnicianSchedulePage() {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
   if (!profile) return null;
 
+  const today = new Date().toISOString().split('T')[0];
+  // eslint-disable-next-line react-hooks/purity -- server component: computes a request-time date window once
+  const thirtyDaysAhead = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   const { data: schedule } = await supabase
     .from('staff_schedule')
     .select('*, profiles(full_name)')
-    .gte('date', new Date().toISOString().split('T')[0])
-    .lte('date', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+    .gte('date', today)
+    .lte('date', thirtyDaysAhead)
     .order('date', { ascending: true });
 
   return <TechnicianScheduleClient initialSchedule={schedule || []} isOwner={profile.role === 'owner'} />;

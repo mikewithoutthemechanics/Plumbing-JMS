@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createJob } from '@/lib/supabase/services';
+import type { Job } from '@/lib/types';
 
 export function useCreateJob() {
   const queryClient = useQueryClient();
@@ -9,7 +10,7 @@ export function useCreateJob() {
     onMutate: async (newJob) => {
       await queryClient.cancelQueries({ queryKey: ['jobs'] });
       const previousJobs = queryClient.getQueryData(['jobs']);
-      queryClient.setQueryData(['jobs'], (old: any[] = []) => [...old, newJob]);
+      queryClient.setQueryData(['jobs'], (old: Job[] = []) => [...old, newJob]);
       return { previousJobs };
     },
     onError: (err, newJob, context) => {

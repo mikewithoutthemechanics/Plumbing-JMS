@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createMaterial } from '@/lib/supabase/services';
+import type { Material } from '@/lib/types';
 
 export function useCreateMaterial() {
   const queryClient = useQueryClient();
@@ -9,7 +10,7 @@ export function useCreateMaterial() {
     onMutate: async (newMaterial) => {
       await queryClient.cancelQueries({ queryKey: ['materials'] });
       const previousMaterials = queryClient.getQueryData(['materials']);
-      queryClient.setQueryData(['materials'], (old: any[] = []) => [
+      queryClient.setQueryData(['materials'], (old: Material[] = []) => [
         ...old,
         newMaterial,
       ]);

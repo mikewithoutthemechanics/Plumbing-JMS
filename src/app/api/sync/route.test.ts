@@ -14,9 +14,19 @@ const mockGetSupabaseServerClient =
   getSupabaseServerClient as unknown as MockedFunction<typeof getSupabaseServerClient>;
 
 describe('/api/sync route', () => {
-  let mockSupabase: any;
-  let singleMock: any;
-  let builder: any;
+  let singleMock: ReturnType<typeof vi.fn>;
+  let builder: {
+    select: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    single: ReturnType<typeof vi.fn>;
+    insert: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+  };
+  let mockSupabase: {
+    auth: { getUser: ReturnType<typeof vi.fn> };
+    from: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     singleMock = vi.fn();
@@ -32,7 +42,7 @@ describe('/api/sync route', () => {
       auth: { getUser: vi.fn() },
       from: vi.fn(() => builder),
     };
-    mockGetSupabaseServerClient.mockResolvedValue(mockSupabase);
+    mockGetSupabaseServerClient.mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof getSupabaseServerClient>>);
   });
 
   it('returns 401 when user is not authenticated', async () => {

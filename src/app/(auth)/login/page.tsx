@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LOCAL_STORAGE_KEYS } from '@/lib/constants/storage';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,8 +11,13 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const enableDemoLogin = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
 
   const handleDemoLogin = () => {
+    if (!enableDemoLogin) {
+      setError('Demo login is disabled');
+      return;
+    }
     const fakeUser = {
       id: 'demo-admin-001',
       email: 'demo@plumbing.jms',
@@ -31,7 +35,8 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        if (email === 'test@agentcy.co.za' && password === '123Admin') {
+        // Only allow test credentials if demo login is enabled
+        if (enableDemoLogin && email === 'test@agentcy.co.za' && password === '123Admin') {
           const fakeUser = {
             id: 'dev-admin-001',
             email: 'test@agentcy.co.za',
@@ -170,15 +175,17 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <button
-            onClick={handleDemoLogin}
-            className="btn btn-primary w-full bg-green-600 hover:bg-green-700 border-0"
-            disabled={loading}
-          >
-            Demo as Admin
-          </button>
-        </div>
+        {enableDemoLogin && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <button
+              onClick={handleDemoLogin}
+              className="btn btn-primary w-full bg-green-600 hover:bg-green-700 border-0"
+              disabled={loading}
+            >
+              Demo as Admin
+            </button>
+          </div>
+        )}
 
         <div className="mt-6 text-center">
           <button

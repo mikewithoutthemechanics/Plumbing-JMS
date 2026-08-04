@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteCustomer } from '@/lib/supabase/services';
+import type { Customer } from '@/lib/types';
 
 export function useDeleteCustomer() {
   const queryClient = useQueryClient();
@@ -9,7 +10,7 @@ export function useDeleteCustomer() {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['customers'] });
       const previousCustomers = queryClient.getQueryData(['customers']);
-      queryClient.setQueryData(['customers'], (old: any[] = []) =>
+      queryClient.setQueryData(['customers'], (old: Customer[] = []) =>
         old.filter(customer => customer.id !== id)
       );
       return { previousCustomers };

@@ -57,7 +57,7 @@ describe('JobsList Component', () => {
       data: undefined,
       isLoading: true,
       error: null,
-    } as any);
+    } as unknown as ReturnType<typeof useJobs>);
 
     render(<JobsList />);
 
@@ -69,7 +69,7 @@ describe('JobsList Component', () => {
       data: undefined,
       isLoading: false,
       error: new Error('Failed to fetch jobs'),
-    } as any);
+    } as unknown as ReturnType<typeof useJobs>);
 
     render(<JobsList />);
 
@@ -81,7 +81,7 @@ describe('JobsList Component', () => {
       data: mockJobs,
       isLoading: false,
       error: null,
-    } as any);
+    } as unknown as ReturnType<typeof useJobs>);
 
     render(<JobsList />);
 
@@ -110,7 +110,7 @@ describe('JobsList Component', () => {
       data: [],
       isLoading: false,
       error: null,
-    } as any);
+    } as unknown as ReturnType<typeof useJobs>);
 
     render(<JobsList />);
 
@@ -123,7 +123,7 @@ describe('JobsList Component', () => {
       data: assignedJobs,
       isLoading: false,
       error: null,
-    } as any);
+    } as unknown as ReturnType<typeof useJobs>);
 
     render(<JobsList filters={[['status', 'eq', 'assigned']] as [string, string, unknown][]} />);
 
@@ -139,7 +139,7 @@ describe('JobsList Component', () => {
       data: mockJobs,
       isLoading: false,
       error: null,
-    } as any);
+    } as unknown as ReturnType<typeof useJobs>);
 
     render(<JobsList />);
 

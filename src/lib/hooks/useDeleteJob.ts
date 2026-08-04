@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteJob } from '@/lib/supabase/services';
+import type { Job } from '@/lib/types';
 
 export function useDeleteJob() {
   const queryClient = useQueryClient();
@@ -9,7 +10,7 @@ export function useDeleteJob() {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['jobs'] });
       const previousJobs = queryClient.getQueryData(['jobs']);
-      queryClient.setQueryData(['jobs'], (old: any[] = []) =>
+      queryClient.setQueryData(['jobs'], (old: Job[] = []) =>
         old.filter(job => job.id !== id)
       );
       return { previousJobs };

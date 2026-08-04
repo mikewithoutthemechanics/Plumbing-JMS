@@ -1,8 +1,8 @@
-import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals';
+import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from 'web-vitals';
 import { logger } from '@/lib/logger';
 
-const reportWebVitals = (onPerfEntry?: (metric: any) => void) => {
-  const handler = (metric: any) => {
+const reportWebVitals = (onPerfEntry?: (metric: Metric) => void) => {
+  const handler = (metric: Metric) => {
     // If a user handler is provided, call it
     if (onPerfEntry) {
       onPerfEntry(metric);

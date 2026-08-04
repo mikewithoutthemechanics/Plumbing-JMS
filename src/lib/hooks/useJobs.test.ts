@@ -21,10 +21,10 @@ const createWrapper = () => {
 };
 
 describe('useJobs hook', () => {
-  const mockJobs: any[] = [
+  const mockJobs = [
     { id: '1', job_number: 'JOB-001', description: 'Fix leaky faucet', status: 'assigned' },
     { id: '2', job_number: 'JOB-002', description: 'Install new toilet', status: 'completed' },
-  ];
+  ] as unknown as Awaited<ReturnType<typeof getJobs>>;
 
   beforeEach(() => {
     vi.clearAllMocks();

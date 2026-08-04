@@ -116,9 +116,7 @@ export async function POST(request: NextRequest) {
     await supabase.from('sync_queue').delete().eq('id', id);
   }
 
-  // Log sync operation (using the user's IP from the request)
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || 'unknown';
-  // Note: logAudit is called but we could also log sync operations specifically
+  // Note: we could also log sync operations with the caller's IP for audit purposes.
   // For now, the sync operation success is enough
 
   return NextResponse.json({ success: true });

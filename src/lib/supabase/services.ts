@@ -2,9 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import type { Job, Customer, Material, User } from '@/lib/types';
 
-// Generic types
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
-
+// Local schema describing our tables (used for return-type annotations only)
 interface Database {
   public: {
     Tables: {
@@ -18,8 +16,10 @@ interface Database {
 
 type TableName = keyof Database['public']['Tables'];
 
-// Bind the untyped shared client to our schema so query-builder chains are typed
-const typedSupabase = supabase as unknown as SupabaseClient<Database>;
+// Use the plain (untyped) client to avoid fighting Supabase's generic schema
+// inference. Every boundary call is cast locally so the public helpers stay
+// strongly typed.
+const client = supabase as unknown as SupabaseClient;
 
 export async function getRows<T extends TableName>(
   table: T,
@@ -29,13 +29,14 @@ export async function getRows<T extends TableName>(
     throw new Error('Supabase client is not initialized');
   }
 
-  let query: any = (typedSupabase.from(table) as any).select('*');
+  let query = client.from(table).select('*');
   for (const [column, operator, value] of filters) {
-    query = query[operator](column, value);
+    const filterBuilder = query as unknown as Record<string, (col: string, val: unknown) => typeof query>;
+    query = filterBuilder[operator]?.(column, value) ?? query;
   }
   const { data, error } = await query;
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as unknown as Database['public']['Tables'][T]['Row'][];
 }
 
 export async function getRowById<T extends TableName>(
@@ -46,9 +47,9 @@ export async function getRowById<T extends TableName>(
     throw new Error('Supabase client is not initialized');
   }
 
-  const { data, error } = await (typedSupabase.from(table) as any).select('*').eq('id', id).single();
+  const { data, error } = await client.from(table).select('*').eq('id', id).single();
   if (error) throw error;
-  return data;
+  return data as unknown as Database['public']['Tables'][T]['Row'] | null;
 }
 
 export async function insertRow<T extends TableName>(
@@ -59,9 +60,12 @@ export async function insertRow<T extends TableName>(
     throw new Error('Supabase client is not initialized');
   }
 
-  const { data: inserted, error } = await (typedSupabase.from(table) as any).insert(data).single();
+  const { data: inserted, error } = await client
+    .from(table)
+    .insert(data as unknown as Record<string, unknown>)
+    .single();
   if (error) throw error;
-  return inserted;
+  return inserted as unknown as Database['public']['Tables'][T]['Row'];
 }
 
 export async function updateRow<T extends TableName>(
@@ -73,9 +77,14 @@ export async function updateRow<T extends TableName>(
     throw new Error('Supabase client is not initialized');
   }
 
-  const { data: updated, error } = await (typedSupabase.from(table) as any).update(data).eq('id', id).select().single();
+  const { data: updated, error } = await client
+    .from(table)
+    .update(data as unknown as Record<string, unknown>)
+    .eq('id', id)
+    .select()
+    .single();
   if (error) throw error;
-  return updated;
+  return updated as unknown as Database['public']['Tables'][T]['Row'];
 }
 
 export async function deleteRow<T extends TableName>(
@@ -86,7 +95,7 @@ export async function deleteRow<T extends TableName>(
     throw new Error('Supabase client is not initialized');
   }
 
-  const { error } = await (typedSupabase.from(table) as any).delete().eq('id', id);
+  const { error } = await client.from(table).delete().eq('id', id);
   if (error) throw error;
 }
 

@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { twMerge } from 'tailwind-merge';
 
 const cardVariants = cva(
   'rounded-lg border bg-white text-shadow-dark ring-offset-background',

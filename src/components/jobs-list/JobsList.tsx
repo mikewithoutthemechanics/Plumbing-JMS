@@ -87,51 +87,6 @@ function Plus({ className }: IconProps) {
   );
 }
 
-// Helper component for user plus icon
-function UserPlus() {
-  return (
-    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-    </svg>
-  );
-}
-
-// Helper component for package icon
-function Package() {
-  return (
-    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 7v9a2 2 0 002 2h10a2 2 0 002-2V7M3 7l9 6 9-6M3 7l9-6 9 6" />
-    </svg>
-  );
-}
-
-// Helper component for bar chart icon
-function BarChart3() {
-  return (
-    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v18h18"/>
-    </svg>
-  );
-}
-
-// Helper component for calendar icon
-function Calendar() {
-  return (
-    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 4h10M5 7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-10a2 2 0 00-2-2H5zm3 4v1h4v-1H8zM5 17a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2H7a2 2 0 00-2 2v10z" />
-    </svg>
-  );
-}
-
-// Helper component for sliders icon
-function Sliders() {
-  return (
-    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16" />
-    </svg>
-  );
-}
-
 // Helper component for chevron down
 function ChevronDown({ className }: IconProps) {
   return (

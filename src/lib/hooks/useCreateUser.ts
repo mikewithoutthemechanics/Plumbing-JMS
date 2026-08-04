@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createUser } from '@/lib/supabase/services';
+import type { User } from '@/lib/types';
 
 export function useCreateUser() {
   const queryClient = useQueryClient();
@@ -9,7 +10,7 @@ export function useCreateUser() {
     onMutate: async (newUser) => {
       await queryClient.cancelQueries({ queryKey: ['users'] });
       const previousUsers = queryClient.getQueryData(['users']);
-      queryClient.setQueryData(['users'], (old: any[] = []) => [
+      queryClient.setQueryData(['users'], (old: User[] = []) => [
         ...old,
         newUser,
       ]);
