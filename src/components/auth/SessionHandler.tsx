@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 
 /**
@@ -20,7 +21,7 @@ export default function SessionHandler() {
       return;
     }
 
-    const { data } = client.auth.onAuthStateChange((_event, session) => {
+    const { data } = client.auth.onAuthStateChange((_event: string, session: Session | null) => {
       if (session) {
         router.replace('/');
       }

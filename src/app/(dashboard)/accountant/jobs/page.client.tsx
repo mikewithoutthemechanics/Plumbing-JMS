@@ -28,7 +28,7 @@ export default function AccountantJobsClient({ initialJobs }: Props) {
               `)
               .in('status', ['completed', 'invoiced'])
               .order('invoiced_at', { ascending: false })
-              .then(({ data }) => data && setJobs(data));
+              .then(({ data }: { data: typeof initialJobs | null }) => data && setJobs(data));
           }
         )
         .subscribe();
