@@ -1,26 +1,30 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { MockedFunction } from 'vitest';
 import { checkRateLimit, cleanupRateLimits } from './rate-limiter';
 
 // Mock the Supabase client
-jest.mock('@/lib/supabase/server', () => ({
-  getSupabaseAdminClient: jest.fn(),
+vi.mock('@/lib/supabase/server', () => ({
+  getSupabaseAdminClient: vi.fn(),
 }));
 
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 
+const mockGetSupabaseAdminClient = getSupabaseAdminClient as unknown as MockedFunction<typeof getSupabaseAdminClient>;
+
 describe('rate limiter', () => {
   const mockSupabase = {
-    from: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    single: jest.fn(),
-    upsert: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    lt: jest.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    single: vi.fn(),
+    upsert: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    lt: vi.fn().mockReturnThis(),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (getSupabaseAdminClient as jest.Mock).mockResolvedValue(mockSupabase);
+    vi.clearAllMocks();
+    mockGetSupabaseAdminClient.mockResolvedValue(mockSupabase as any);
   });
 
   describe('checkRateLimit', () => {

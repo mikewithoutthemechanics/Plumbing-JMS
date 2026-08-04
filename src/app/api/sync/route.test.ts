@@ -1,127 +1,110 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { POST } from './route'
-import { NextRequest, NextResponse } from 'next/server'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { MockedFunction } from 'vitest';
+import { NextRequest } from 'next/server';
+import { POST } from './route';
 
-// Mock next/server
-vi.mock('next/server', () => ({
-  NextRequest: {
-    json: vi.fn(),
-  },
-  NextResponse: {
-    json: vi.fn((body, options) => ({ body, ...options })),
-  },
-}))
-
-// Mock supabase client
+// Mock the Supabase server client (NOT next/server — use the real NextRequest/NextResponse)
 vi.mock('@/lib/supabase/server', () => ({
   getSupabaseServerClient: vi.fn(),
-}))
+}));
+
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+
+const mockGetSupabaseServerClient =
+  getSupabaseServerClient as unknown as MockedFunction<typeof getSupabaseServerClient>;
 
 describe('/api/sync route', () => {
-  let mockSupabase: any
-  let mockRequest: any
+  let mockSupabase: any;
+  let singleMock: any;
+  let builder: any;
 
   beforeEach(() => {
-    mockSupabase = {
-      auth: {
-        getUser: vi.fn()
-      },
-      from: vi.fn().mockReturnThis(),
+    singleMock = vi.fn();
+    builder = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      single: singleMock,
       insert: vi.fn().mockReturnThis(),
       update: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
-    }
-
-    mockRequest = {
-      json: vi.fn(),
-      headers: {
-        get: vi.fn()
-      }
-    }
-
-    // Reset all mocks
-    vi.clearAllMocks()
-  })
+    };
+    mockSupabase = {
+      auth: { getUser: vi.fn() },
+      from: vi.fn(() => builder),
+    };
+    mockGetSupabaseServerClient.mockResolvedValue(mockSupabase);
+  });
 
   it('returns 401 when user is not authenticated', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
 
-    const req = new NextRequest('http://localhost:3000/api/sync', { method: 'POST' })
-    const res = await POST(req)
+    const req = new NextRequest('http://localhost:3000/api/sync', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    const res = await POST(req);
 
-    expect(res).toHaveProperty('status', 401)
-    // @ts-ignore: NextResponse.body is possibly null in the types, but we know it's not null in our mock
-    expect(res.body.error).toBe('Unauthorized')
-  })
+    expect(res.status).toBe(401);
+    expect((await res.json()).error).toBe('Unauthorized');
+  });
 
   it('returns 403 when user role is not owner or technician', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } })
-    mockSupabase.from().select().single().mockResolvedValue({ data: { role: 'visitor' } })
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } });
+    singleMock.mockResolvedValueOnce({ data: { role: 'visitor' }, error: null });
 
-    const req = new NextRequest('http://localhost:3000/api/sync', { method: 'POST' })
-    const res = await POST(req)
+    const req = new NextRequest('http://localhost:3000/api/sync', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    const res = await POST(req);
 
-    expect(res).toHaveProperty('status', 403)
-    // @ts-ignore: NextResponse.body is possibly null in the types, but we know it's not null in our mock
-    expect(res.body.error).toBe('Forbidden')
-  })
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe('Forbidden');
+  });
 
   it('handles quote submission for owners', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } })
-    mockSupabase.from().select().single().mockResolvedValue({ data: { role: 'owner' } })
-    mockRequest.json.mockResolvedValue({
-      quote: {
-        customer_name: 'John Doe',
-        customer_email: 'john@example.com',
-        customer_phone: '1234567890',
-        description: 'Fix leaky faucet'
-      }
-    })
-    mockSupabase.from().insert().select().single().mockResolvedValue({
-      data: { id: 'quote-id', customer_name: 'John Doe' },
-      error: null
-    })
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } });
+    singleMock
+      .mockResolvedValueOnce({ data: { role: 'owner' }, error: null })
+      .mockResolvedValueOnce({
+        data: { id: 'quote-id', customer_name: 'John Doe' },
+        error: null,
+      });
 
-    const req = new NextRequest('http://localhost:3000/api/sync', { method: 'POST' })
-    req.json = mockRequest.json
-    // @ts-ignore - mocking headers
-    req.headers = mockRequest.headers
+    const req = new NextRequest('http://localhost:3000/api/sync', {
+      method: 'POST',
+      body: JSON.stringify({
+        quote: {
+          customer_name: 'John Doe',
+          customer_email: 'john@example.com',
+          customer_phone: '1234567890',
+          description: 'Fix leaky faucet',
+        },
+      }),
+    });
+    const res = await POST(req);
 
-    const res = await POST(req)
-
-    expect(res).toHaveProperty('status', 201)
-    // @ts-ignore: NextResponse.body is possibly null in the types, but we know it's not null in our mock
-    expect(res.body.quote).toEqual({ id: 'quote-id', customer_name: 'John Doe' })
-  })
+    expect(res.status).toBe(201);
+    expect((await res.json()).quote).toEqual({ id: 'quote-id', customer_name: 'John Doe' });
+  });
 
   it('handles sync operation for valid data', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } })
-    mockSupabase.from().select().single().mockResolvedValue({ data: { role: 'owner' } })
-    mockRequest.json.mockResolvedValue({
-      table_name: 'customers',
-      operation: 'INSERT',
-      payload: { name: 'Jane Doe', email: 'jane@example.com' },
-      id: 'sync-id'
-    })
-    mockSupabase.from().insert().select().mockResolvedValue({
-      data: [{ id: 'customer-id', name: 'Jane Doe', email: 'jane@example.com' }],
-      error: null
-    })
-    mockSupabase.from().delete.mockResolvedValue({ error: null })
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } });
+    singleMock.mockResolvedValueOnce({ data: { role: 'owner' }, error: null });
 
-    const req = new NextRequest('http://localhost:3000/api/sync', { method: 'POST' })
-    req.json = mockRequest.json
-    // @ts-ignore - mocking headers
-    req.headers = mockRequest.headers
-    mockRequest.headers.get.mockReturnValue('127.0.0.1')
+    const req = new NextRequest('http://localhost:3000/api/sync', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '127.0.0.1' },
+      body: JSON.stringify({
+        table_name: 'customers',
+        operation: 'INSERT',
+        payload: { name: 'Jane Doe', email: 'jane@example.com' },
+        id: 'sync-id',
+      }),
+    });
+    const res = await POST(req);
 
-    const res = await POST(req)
-
-    expect(res).toHaveProperty('status', 200)
-    // @ts-ignore: NextResponse.body is possibly null in the types, but we know it's not null in our mock
-    expect(res.body.success).toBe(true)
-  })
-})
+    expect(res.status).toBe(200);
+    expect((await res.json()).success).toBe(true);
+  });
+});

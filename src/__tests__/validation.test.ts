@@ -11,13 +11,13 @@ describe('validateJobInput', () => {
   test('returns error for negative admin_hourly_rate', () => {
     const data = { admin_hourly_rate: -5 };
     const errors = validateJobInput(data);
-    expect(errors).toContain('admin_hourly_rate: must be >= 0');
+    expect(errors).toContain('admin_hourly_rate: Too small: expected number to be >=0');
   });
 
   test('returns error for NaN admin_hourly_rate', () => {
     const data = { admin_hourly_rate: NaN };
     const errors = validateJobInput(data);
-    expect(errors).toContain('admin_hourly_rate: Invalid number');
+    expect(errors).toContain('admin_hourly_rate: Invalid input: expected number, received NaN');
   });
 
   test('does not validate when field is undefined', () => {
@@ -29,7 +29,7 @@ describe('validateJobInput', () => {
   test('does validate when field is null', () => {
     const data = { admin_hourly_rate: null };
     const errors = validateJobInput(data);
-    expect(errors).toContain('admin_hourly_rate: Expected number, received null');
+    expect(errors).toContain('admin_hourly_rate: Invalid input: expected number, received null');
   });
 
   test('returns multiple errors for multiple invalid fields (when added)', () => {
@@ -37,6 +37,6 @@ describe('validateJobInput', () => {
     const data = { admin_hourly_rate: -5 };
     const errors = validateJobInput(data);
     expect(errors).toHaveLength(1);
-    expect(errors[0]).toBe('admin_hourly_rate: must be >= 0');
+    expect(errors[0]).toBe('admin_hourly_rate: Too small: expected number to be >=0');
   });
 });

@@ -7,9 +7,11 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './test/setup.ts',
-    // Alias to match tsconfig
     alias: {
       '@': '/root/Plumbing-JMS/src',
     },
+    // Exclude Playwright e2e specs (run via `npm run test:e2e`) so Vitest doesn't
+    // try to execute them as unit tests.
+    exclude: ['tests/e2e/**', 'node_modules/**', '.next/**'],
   },
 });
