@@ -1,0 +1,234 @@
+---
+name: plumbing-jms-conventions
+description: Development conventions and patterns for Plumbing-JMS. TypeScript Next.js project with conventional commits.
+---
+
+# Plumbing Jms Conventions
+
+> Generated from [mikewithoutthemechanics/Plumbing-JMS](https://github.com/mikewithoutthemechanics/Plumbing-JMS) on 2026-08-04
+
+## Overview
+
+This skill teaches Claude the development patterns and conventions used in Plumbing-JMS.
+
+## Tech Stack
+
+- **Primary Language**: TypeScript
+- **Framework**: Next.js
+- **Architecture**: type-based module organization
+- **Test Location**: mixed
+- **Test Framework**: vitest
+
+## When to Use This Skill
+
+Activate this skill when:
+- Making changes to this repository
+- Adding new features following established patterns
+- Writing tests that match project conventions
+- Creating commits with proper message format
+
+## Commit Conventions
+
+Follow these commit message conventions based on 10 analyzed commits.
+
+### Commit Style: Conventional Commits
+
+### Prefixes Used
+
+- `fix`
+- `chore`
+- `feat`
+- `a11y`
+
+### Message Guidelines
+
+- Average message length: ~80 characters
+- Keep first line concise and descriptive
+- Use imperative mood ("Add feature" not "Added feature")
+
+
+*Commit message example*
+
+```text
+chore: complete improvement plan tasks including testing, security, documentation, performance, code quality, CI/CD, and advanced features
+```
+
+*Commit message example*
+
+```text
+fix: resolve TypeScript errors and improve test setup
+```
+
+*Commit message example*
+
+```text
+feat: add Google OAuth sign-in button and /auth/callback route
+```
+
+*Commit message example*
+
+```text
+a11y: add id/name and associate labels on login form fields
+```
+
+*Commit message example*
+
+```text
+fix: resolve all TypeScript errors, Tailwind v4 config, and complete improvement plan
+```
+
+*Commit message example*
+
+```text
+chore: commit working changes — Tailwind v4, config, hooks, API and UI fixes
+```
+
+*Commit message example*
+
+```text
+fix: convert Next.js and Tailwind configs to ESM for type:module build
+```
+
+*Commit message example*
+
+```text
+fix: process OAuth code at Site URL root to avoid redirect-allowlist loop
+```
+
+## Architecture
+
+### Project Structure: Single Package
+
+This project uses **type-based** module organization.
+
+### Source Layout
+
+```
+src/
+├── __tests__/
+├── app/
+├── components/
+├── lib/
+├── types/
+```
+
+### Configuration Files
+
+- `.github/workflows/ci.yml`
+- `.github/workflows/lhci.yml`
+- `next.config.mjs`
+- `next.config.ts`
+- `package.json`
+- `tailwind.config.js`
+- `tests/e2e/playwright.config.ts`
+- `vercel.json`
+- `vitest.config.ts`
+- `next.config.js`
+
+### Guidelines
+
+- Group code by type (components, services, utils)
+- Keep related functionality in the same type folder
+- Avoid circular dependencies between type folders
+
+## Code Style
+
+### Language: TypeScript
+
+### Naming Conventions
+
+| Element | Convention |
+|---------|------------|
+| Files | camelCase |
+| Functions | camelCase |
+| Classes | PascalCase |
+| Constants | SCREAMING_SNAKE_CASE |
+
+### Import Style: Path Aliases (@/, ~/)
+
+### Export Style: Default Exports
+
+
+*Preferred import style*
+
+```typescript
+// Use path aliases for imports
+import { Button } from '@/components/Button'
+import { useAuth } from '@/hooks/useAuth'
+import { api } from '@/lib/api'
+```
+
+*Preferred export style*
+
+```typescript
+// Use default exports for main component/function
+export default function UserProfile() { ... }
+```
+
+## Testing
+
+### Test Framework: vitest
+
+### File Pattern: `*.test.ts`
+
+### Test Types
+
+- **Unit tests**: Test individual functions and components in isolation
+- **Integration tests**: Test interactions between multiple components/services
+- **E2e tests**: Test complete user flows through the application
+
+### Mocking: vi.mock
+
+
+*Test file structure*
+
+```typescript
+import { describe, it, expect } from 'vitest'
+
+describe('MyFunction', () => {
+  it('should return expected result', () => {
+    const result = myFunction(input)
+    expect(result).toBe(expected)
+  })
+})
+```
+
+## Error Handling
+
+### Error Handling Style: Try-Catch Blocks
+
+
+*Standard error handling pattern*
+
+```typescript
+try {
+  const result = await riskyOperation()
+  return result
+} catch (error) {
+  console.error('Operation failed:', error)
+  throw new Error('User-friendly message')
+}
+```
+
+## Best Practices
+
+Based on analysis of the codebase, follow these practices:
+
+### Do
+
+- Use conventional commit format (feat:, fix:, etc.)
+- Write tests using vitest
+- Follow *.test.ts naming pattern
+- Use camelCase for file names
+- Prefer default exports
+
+### Don't
+
+- Don't use long relative imports (use aliases)
+- Don't write vague commit messages
+- Don't skip tests for new features
+- Don't deviate from established patterns without discussion
+
+---
+
+*This skill was auto-generated by [ECC Tools](https://ecc.tools). Review and customize as needed for your team.*
