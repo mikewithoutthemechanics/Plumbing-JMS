@@ -34,7 +34,7 @@ export default function CustomersClient({ initialCustomers }: Props) {
       address: formData.address,
       notes: formData.notes || null,
     };
-    const { error } = await supabase.from('customers').insert(customerData as never);
+    const { error } = await supabase.from('customers').insert(customerData as unknown as { [key: string]: unknown });
     if (error) alert('Error: ' + error.message);
     else {
       setShowModal(false);

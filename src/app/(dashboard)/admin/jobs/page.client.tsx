@@ -83,7 +83,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
       assigned_to: formData.assigned_to || null,
       status: formData.assigned_to ? 'assigned' : 'pending',
     };
-    const { error } = await supabase.from('job_cards').insert(jobData as never);
+    const { error } = await supabase.from('job_cards').insert(jobData as unknown as { [key: string]: unknown });
     if (error) alert('Error: ' + error.message);
     else {
       setShowCreateModal(false);
@@ -106,7 +106,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
         phone: clientForm.phone || null,
         address: clientForm.address,
         notes: clientForm.notes || null,
-      } as never)
+      } as unknown as { [key: string]: unknown })
       .select()
       .single();
     if (error) {
@@ -124,7 +124,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
     setLoading(true);
     const { supabase } = await import('@/lib/supabase/client');
     if (!supabase) return;
-    const { error } = await supabase.from('job_cards').update({ status: newStatus } as never).eq('id', jobId);
+    const { error } = await supabase.from('job_cards').update({ status: newStatus } as unknown as { [key: string]: unknown }).eq('id', jobId);
     if (error) alert('Error: ' + error.message);
     else refreshJobs();
     setLoading(false);

@@ -19,16 +19,20 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], recentAudi
   const [autoNotify, setAutoNotify] = useState(false);
 
   useEffect(() => {
+    let channel: { unsubscribe: () => void } | null = null;
     import('@/lib/supabase/client').then(({ supabase }) => {
       if (!supabase) return;
-      supabase
+      channel = supabase
         .channel('admin-overview')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'job_cards' }, () => {
-          supabase.from('job_cards').select('status, grand_total, created_at').order('created_at', { ascending: false }).limit(10)
+          supabase.from('job_cards').select('*, customer:customers(name), assigned_to_profile:profiles!job_cards_assigned_to_fkey(full_name, email)').order('created_at', { ascending: false }).limit(10)
             .then(({ data }: { data: unknown }) => data && setJobs(data as JobCard[]));
         })
         .subscribe();
     });
+    return () => {
+      if (channel) channel.unsubscribe();
+    };
   }, []);
 
   const pending = jobs.filter(j => j.status === 'pending').length;

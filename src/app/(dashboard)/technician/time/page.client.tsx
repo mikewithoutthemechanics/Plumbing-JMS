@@ -38,7 +38,7 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
       hours: 0,
       is_paused: false,
     };
-    const { error } = await supabase.from('time_logs').insert(logData as never);
+    const { error } = await supabase.from('time_logs').insert(logData as unknown as { [key: string]: unknown });
     if (error) alert('Error: ' + error.message);
     else {
       setActiveJobId(jobId);
@@ -66,7 +66,7 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
     const hours = calculateHours(logData.clock_in, new Date().toISOString());
     const { error } = await supabase
       .from('time_logs')
-      .update({ clock_out: new Date().toISOString(), hours } as never)
+      .update({ clock_out: new Date().toISOString(), hours } as unknown as { [key: string]: unknown })
       .eq('id', logData.id);
 
     if (error) alert('Error: ' + error.message);

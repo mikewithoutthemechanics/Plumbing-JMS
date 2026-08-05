@@ -2,7 +2,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import DebtorsClient from './page.client';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export default async function AccountantDebtorsPage() {
   const cookieStore = await cookies();
@@ -23,5 +23,5 @@ export default async function AccountantDebtorsPage() {
     .order('outstanding', { ascending: false });
   const total = (data || []).reduce((sum, d) => sum + Number(d.outstanding), 0);
 
-  return <DebtorsClient initialDebtors={(data || []) as never} totalOutstanding={total} />;
+  return <DebtorsClient initialDebtors={data || []} totalOutstanding={total} />;
 }

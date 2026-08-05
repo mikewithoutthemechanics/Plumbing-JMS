@@ -1,14 +1,18 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./setup-tests.ts'],
-    // Exclude Playwright e2e specs (run via `npm run test:e2e`) so Vitest doesn't
-    // try to execute them as unit tests.
     exclude: ['tests/e2e/**', 'node_modules/**', '.next/**'],
   },
 });

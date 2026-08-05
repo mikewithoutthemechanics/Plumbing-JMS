@@ -28,7 +28,7 @@ export default function AdminJobDetailClient({ jobId }: { jobId: string }) {
       supabase.from('job_tenders').select('*').eq('job_card_id', jobId).order('created_at', { ascending: false }),
       supabase.from('job_signatures').select('*').eq('job_card_id', jobId).order('created_at', { ascending: false }),
     ]);
-    if (jobData) setJob(jobData as never);
+    if (jobData) setJob(jobData as unknown as (JobCard & { customer?: { name: string }; assigned_to_profile?: { full_name: string } }));
     if (matData) setMaterials(matData as JobMaterialRow[]);
     if (tenderData) setTenders(tenderData as JobTender[]);
     if (sigData) setSignatures(sigData as JobSignature[]);
@@ -43,7 +43,7 @@ export default function AdminJobDetailClient({ jobId }: { jobId: string }) {
     setLoading(true);
     const { supabase } = await import('@/lib/supabase/client');
     if (!supabase) { setLoading(false); return; }
-    const { error } = await supabase.from('job_cards').update({ status: newStatus } as never).eq('id', id);
+    const { error } = await supabase.from('job_cards').update({ status: newStatus } as unknown as { [key: string]: unknown }).eq('id', id);
     if (error) setError(error.message);
     else {
       if (newStatus === 'to_be_invoiced') {

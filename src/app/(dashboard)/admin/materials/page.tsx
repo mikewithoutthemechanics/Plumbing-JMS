@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { getMockMaterials } from '@/lib/utils/dev-mock-data';
 import MaterialsClient from './page.client';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export default async function MaterialsPage() {
   const cookieStore = await cookies();

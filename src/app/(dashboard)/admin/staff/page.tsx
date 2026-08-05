@@ -2,7 +2,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import StaffClient from './page.client';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export default async function StaffPage() {
   const cookieStore = await cookies();

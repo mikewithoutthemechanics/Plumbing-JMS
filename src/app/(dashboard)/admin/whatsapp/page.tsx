@@ -2,7 +2,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import WhatsappClient from './page.client';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export default async function AdminWhatsappPage() {
   const cookieStore = await cookies();
@@ -17,5 +17,5 @@ export default async function AdminWhatsappPage() {
   if (profile?.role !== 'owner') return null;
 
   const { data } = await supabase.from('whatsapp_config').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle();
-  return <WhatsappClient initialConfig={data as never} />;
+  return <WhatsappClient initialConfig={data ?? null} />;
 }

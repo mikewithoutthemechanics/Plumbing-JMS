@@ -12,9 +12,10 @@ export default function AccountantJobsClient({ initialJobs }: Props) {
   const [jobs, setJobs] = useState(initialJobs);
 
   useEffect(() => {
+    let channel: { unsubscribe: () => void } | null = null;
     import('@/lib/supabase/client').then(({ supabase }) => {
       if (!supabase) return;
-      supabase
+      channel = supabase
         .channel('accountant-jobs')
         .on('postgres_changes',
           { event: '*', schema: 'public', table: 'job_cards' },
@@ -33,6 +34,9 @@ export default function AccountantJobsClient({ initialJobs }: Props) {
         )
         .subscribe();
     });
+    return () => {
+      if (channel) channel.unsubscribe();
+    };
   }, []);
 
   return (

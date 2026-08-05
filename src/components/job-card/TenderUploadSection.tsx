@@ -40,8 +40,8 @@ export default function TenderUploadSection({
       file_type: file.type,
       file_size: file.size,
       uploaded_by: user?.id,
-    } as never);
-    if (dbErr) alert('Upload failed: ' + dbErr.message);
+     } as unknown as { [key: string]: unknown });
+     if (dbErr) alert('Upload failed: ' + dbErr.message);
     else onUpdate();
     setUploading(false);
   };
