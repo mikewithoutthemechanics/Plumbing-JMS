@@ -72,8 +72,6 @@ export default function OfflineIndicator() {
     }
   };
 
-  if (isOnline && pendingCount === 0) return null;
-
   return (
     <div className={`offline-indicator ${isOnline ? 'online' : 'offline'} fade-in-up`}
          title={pendingCount > 0 ? `${pendingCount} item${pendingCount !== 1 ? 's' : ''} waiting to sync` : ''}

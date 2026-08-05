@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import SessionHandler from '@/components/auth/SessionHandler';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -11,8 +12,13 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const enableDemoLogin = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
 
   const handleDemoLogin = () => {
+    if (!enableDemoLogin) {
+      setError('Demo login is disabled');
+      return;
+    }
     const fakeUser = {
       id: 'demo-admin-001',
       email: 'demo@plumbing.jms',
@@ -30,7 +36,8 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        if (email === 'test@agentcy.co.za' && password === '123Admin') {
+        // Only allow test credentials if demo login is enabled
+        if (enableDemoLogin && email === 'test@agentcy.co.za' && password === '123Admin') {
           const fakeUser = {
             id: 'dev-admin-001',
             email: 'test@agentcy.co.za',
@@ -73,6 +80,28 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const { supabase } = await import('@/lib/supabase/client');
+      if (!supabase) {
+        setError('Supabase not configured');
+        return;
+      }
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start Google sign in');
+      setLoading(false);
+    }
+  };
+
   const handleMagicLink = async () => {
     if (!email) {
       setError('Please enter your email address');
@@ -98,6 +127,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <SessionHandler />
       <div className="card p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-[var(--plumber-primary)] to-[var(--plumber-accent)]">
@@ -117,20 +147,25 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div>
-              <label className="label">Full Name</label>
+              <label className="label" htmlFor="fullName">Full Name</label>
               <input
+                id="fullName"
+                name="fullName"
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="input"
                 required={!isLogin}
+                autoComplete="name"
               />
             </div>
           )}
 
           <div>
-            <label className="label">Email</label>
+            <label className="label" htmlFor="email">Email</label>
             <input
+              id="email"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -142,14 +177,16 @@ export default function LoginPage() {
 
           {isLogin && (
             <div>
-              <label className="label">Password</label>
+              <label className="label" htmlFor="password">Password</label>
               <input
+                id="password"
+                name="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input"
                 required={isLogin}
-                autoComplete="current-password"
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
               />
             </div>
           )}
@@ -169,15 +206,53 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <button
-            onClick={handleDemoLogin}
-            className="btn btn-primary w-full bg-green-600 hover:bg-green-700 border-0"
-            disabled={loading}
-          >
-            Demo as Admin
-          </button>
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-2 text-gray-400">Or continue with</span>
+          </div>
         </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          className="btn btn-outline w-full flex items-center justify-center gap-2"
+          disabled={loading}
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="#4285F4"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.65l-3.57-2.77c-.99.66-2.26 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38Z"
+            />
+          </svg>
+          Continue with Google
+        </button>
+
+        {enableDemoLogin && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <button
+              onClick={handleDemoLogin}
+              className="btn btn-primary w-full bg-green-600 hover:bg-green-700 border-0"
+              disabled={loading}
+            >
+              Demo as Admin
+            </button>
+          </div>
+        )}
 
         <div className="mt-6 text-center">
           <button

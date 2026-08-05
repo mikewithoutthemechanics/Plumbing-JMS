@@ -25,7 +25,7 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], recentAudi
         .channel('admin-overview')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'job_cards' }, () => {
           supabase.from('job_cards').select('status, grand_total, created_at').order('created_at', { ascending: false }).limit(10)
-            .then(({ data }) => data && setJobs(data as JobCard[]));
+            .then(({ data }: { data: unknown }) => data && setJobs(data as JobCard[]));
         })
         .subscribe();
     });

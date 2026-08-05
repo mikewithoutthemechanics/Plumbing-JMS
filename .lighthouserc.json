@@ -1,0 +1,26 @@
+{
+  "ci": {
+    "collect": {
+      "url": ["http://localhost:3000"],
+      "startServerCommand": "npm run dev",
+      "numberOfRuns": 3,
+      "settings": {
+        "chromeFlags": "--headless --no-sandbox"
+      }
+    },
+    "assert": {
+      "preset": "lighthouse:recommended",
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.9 }],
+        "first-contentful-paint": ["error", { "maxNumericValue": 1500 }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "speed-index": ["error", { "maxNumericValue": 3000 }],
+        "interactive": ["error", { "maxNumericValue": 3500 }],
+        "max-potential-fid": ["error", { "maxNumericValue": 100 }]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

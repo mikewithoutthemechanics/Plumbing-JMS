@@ -19,7 +19,7 @@ export default function MaterialSelector({ jobId, onAddMaterial, onAddCustom, lo
     import('@/lib/supabase/client').then(({ supabase }) => {
       if (!supabase) return;
       supabase.from('materials').select('id, name, unit').eq('is_active', true).order('name')
-        .then(({ data }) => data && setMaterials(data));
+        .then(({ data }: { data: { id: string; name: string; unit: string }[] | null }) => data && setMaterials(data));
     });
   }, []);
 

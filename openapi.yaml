@@ -1,0 +1,991 @@
+openapi: 3.0.3
+info:
+  title: Plumbing JMS API
+  version: 1.0.0
+  description: API for the Plumbing Job Management System
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+paths:
+  /audit:
+    get:
+      summary: Get audit logs
+      responses:
+        '200':
+          description: A list of audit logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    action:
+                      type: string
+                    timestamp:
+                      type: string
+                      format: date-time
+    post:
+      summary: Create audit log
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                userId:
+                  type: string
+                details:
+                  type: object
+      responses:
+        '201':
+          description: Audit log created
+  /jobs:
+    get:
+      summary: Get jobs
+      responses:
+        '200':
+          description: A list of jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Job'
+    post:
+      summary: Create a job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+      responses:
+        '201':
+          description: Job created
+  /jobs/{id}:
+    get:
+      summary: Get job by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+    put:
+      summary: Update job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+      responses:
+        '200':
+          description: Job updated
+    delete:
+      summary: Delete job
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Job deleted
+  /staff:
+    get:
+      summary: Get staff members
+      responses:
+        '200':
+          description: A list of staff members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Staff'
+    post:
+      summary: Create a staff member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Staff'
+      responses:
+        '201':
+          description: Staff member created
+  /staff/{id}:
+    get:
+      summary: Get staff member by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A staff member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Staff'
+    put:
+      summary: Update staff member
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Staff'
+      responses:
+        '200':
+          description: Staff member updated
+    delete:
+      summary: Delete staff member
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Staff member deleted
+  /invoices:
+    get:
+      summary: Get invoices
+      parameters:
+        - in: query
+          name: customerId
+          schema:
+            type: string
+          description: Filter by customer ID
+      responses:
+        '200':
+          description: A list of invoices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'
+    post:
+      summary: Create an invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Invoice'
+      responses:
+        '201':
+          description: Invoice created
+  /invoices/{id}:
+    get:
+      summary: Get invoice by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: An invoice
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+    patch:
+      summary: Update invoice (e.g., record payment)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceUpdate'
+      responses:
+        '200':
+          description: Invoice updated
+  /export:
+    get:
+      summary: Export job data (Excel)
+      responses:
+        '200':
+          description: Excel file with job data
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+    post:
+      summary: Export specific job IDs (Excel)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jobIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Excel file with selected job data
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+  /whatsapp:
+    get:
+      summary: Get WhatsApp configuration (owner only)
+      responses:
+        '200':
+          description: WhatsApp configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppConfig'
+    put:
+      summary: Update WhatsApp configuration (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppConfig'
+      responses:
+        '200':
+          description: WhatsApp configuration updated
+    post:
+      summary: Send WhatsApp reminder for invoice (owner/accountant)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invoiceId:
+                  type: string
+      responses:
+        '200':
+          description: WhatsApp message sent
+        '502':
+          description: Failed to send WhatsApp message
+  /procurement:
+    get:
+      summary: Get procurement items
+      responses:
+        '200':
+          description: A list of procurement items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProcurementItem'
+    post:
+      summary: Create a procurement item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcurementItem'
+      responses:
+        '201':
+          description: Procurement item created
+  /procurement/{id}:
+    get:
+      summary: Get procurement item by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A procurement item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcurementItem'
+    put:
+      summary: Update procurement item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcurementItem'
+      responses:
+        '200':
+          description: Procurement item updated
+    delete:
+      summary: Delete procurement item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Procurement item deleted
+  /schedule:
+    get:
+      summary: Get schedule items
+      responses:
+        '200':
+          description: A list of schedule items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleItem'
+    post:
+      summary: Create a schedule item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleItem'
+      responses:
+        '201':
+          description: Schedule item created
+  /schedule/{id}:
+    get:
+      summary: Get schedule item by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A schedule item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleItem'
+    put:
+      summary: Update schedule item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleItem'
+      responses:
+        '200':
+          description: Schedule item updated
+    delete:
+      summary: Delete schedule item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Schedule item deleted
+  /sync:
+    post:
+      summary: Trigger data synchronization
+      responses:
+        '200':
+          description: Synchronization triggered
+  /debtors:
+    get:
+      summary: Get debtors
+      responses:
+        '200':
+          description: A list of debtors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Debtor'
+    post:
+      summary: Create a debtor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Debtor'
+      responses:
+        '201':
+          description: Debtor created
+  /debtors/{id}:
+    get:
+      summary: Get debtor by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A debtor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Debtor'
+    put:
+      summary: Update debtor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Debtor'
+      responses:
+        '200':
+          description: Debtor updated
+    delete:
+      summary: Delete debtor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Debtor deleted
+  /quotes:
+    get:
+      summary: Get quotes
+      responses:
+        '200':
+          description: A list of quotes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Quote'
+    post:
+      summary: Create a quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Quote'
+      responses:
+        '201':
+          description: Quote created
+  /quotes/{id}:
+    get:
+      summary: Get quote by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A quote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+    put:
+      summary: Update quote
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Quote'
+      responses:
+        '200':
+          description: Quote updated
+    delete:
+      summary: Delete quote
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Quote deleted
+  /accountant:
+    get:
+      summary: Get accountant information
+      responses:
+        '200':
+          description: Accountant information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Accountant'
+  /admin:
+    get:
+      summary: Get admin dashboard data
+      responses:
+        '200':
+          description: Admin dashboard data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stats:
+                    type: object
+                  recentJobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+  /auth/magic-link:
+    post:
+      summary: Send magic link authentication email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Magic link sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Magic link sent
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+components:
+  schemas:
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+        jobNumber:
+          type: string
+        customerId:
+          type: string
+        description:
+          type: string
+        adminHourlyRate:
+          type: number
+          format: float
+        adminNotes:
+          type: string
+        assignedTo:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, completed, cancelled, assigned, to_be_invoiced, invoiced]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+        labourCost:
+          type: number
+          format: float
+          default: 0
+        materialsCost:
+          type: number
+          format: float
+          default: 0
+        subtotal:
+          type: number
+          format: float
+          default: 0
+        vatAmount:
+          type: number
+          format: float
+          default: 0
+        grandTotal:
+          type: number
+          format: float
+          default: 0
+        customer:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+        assignedToProfile:
+          type: object
+          properties:
+            id:
+              type: string
+            fullName:
+              type: string
+            email:
+              type: string
+    Staff:
+      type: object
+      properties:
+        id:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [owner, technician, accountant]
+        phone:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+        jobCardId:
+          type: string
+        customerId:
+          type: string
+        invoiceNumber:
+          type: string
+        amountDue:
+          type: number
+          format: float
+        vatAmount:
+          type: number
+          format: float
+        amountPaid:
+          type: number
+          format: float
+          default: 0
+        status:
+          type: string
+          enum: [unpaid, partial, paid]
+        dueDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        job:
+          $ref: '#/components/schemas/Job'
+        customer:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+        payments:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              amount:
+                type: number
+                format: float
+              method:
+                type: string
+                enum: [cash, card, bank_transfer, check]
+              note:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+              recordedBy:
+                type: string
+    InvoiceUpdate:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: float
+        method:
+          type: string
+          enum: [cash, card, bank_transfer, check]
+        note:
+          type: string
+    WhatsAppConfig:
+      type: object
+      properties:
+        id:
+          type: string
+        baseUrl:
+          type: string
+        sessionName:
+          type: string
+        enabled:
+          type: boolean
+        reminderTemplate:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ProcurementItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        quantityOnHand:
+          type: integer
+          minimum: 0
+        unit:
+          type: string
+        costPerUnit:
+          type: number
+          format: float
+        supplier:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ScheduleItem:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        location:
+          type: string
+        jobId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Debtor:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        contactPerson:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        outstandingBalance:
+          type: number
+          format: float
+          default: 0
+        creditLimit:
+          type: number
+          format: float
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Quote:
+      type: object
+      properties:
+        id:
+          type: string
+        quoteNumber:
+          type: string
+        customerId:
+          type: string
+        description:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+              quantity:
+                type: number
+                format: float
+              unitPrice:
+                type: number
+                format: float
+              total:
+                type: number
+                format: float
+        subtotal:
+          type: number
+          format: float
+        vatAmount:
+          type: number
+          format: float
+        totalAmount:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [draft, sent, accepted, rejected, expired]
+        validUntil:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        customer:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+    Accountant:
+      type: object
+      properties:
+        id:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string

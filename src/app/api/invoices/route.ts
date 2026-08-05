@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/utils/audit';
+import { validateInvoiceInput, validatePaymentInput } from '@/lib/validation';
 
 function invoiceNumber(): string {
   const d = new Date();
@@ -46,8 +47,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+
+    // Validate input
+    const validationErrors = validateInvoiceInput(body);
+    if (validationErrors.length > 0) {
+      return NextResponse.json({ error: validationErrors.join(', ') }, { status: 400 });
+    }
+
     const { job_card_id } = body;
-    if (!job_card_id) return NextResponse.json({ error: 'Missing job_card_id' }, { status: 400 });
 
     const { data: job } = await supabase.from('job_cards').select('*').eq('id', job_card_id).single();
     if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
@@ -81,7 +88,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   const supabase = await getSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user} } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
   if (profile?.role !== 'owner' && profile?.role !== 'accountant') {
@@ -90,10 +97,14 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { invoice_id, amount, method, note } = body;
-    if (!invoice_id || amount == null) {
-      return NextResponse.json({ error: 'Missing invoice_id or amount' }, { status: 400 });
+
+    // Validate input
+    const validationErrors = validatePaymentInput(body);
+    if (validationErrors.length > 0) {
+      return NextResponse.json({ error: validationErrors.join(', ') }, { status: 400 });
     }
+
+    const { invoice_id, amount, method, note } = body;
 
     const { data: invoice } = await supabase.from('invoices').select('*').eq('id', invoice_id).single();
     if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });

@@ -55,3 +55,16 @@ export async function cleanupRateLimits() {
   const expiry = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // older than 24h
   await supabase.from('rate_limits').delete().lt('reset_at', expiry);
 }
+
+// Additional rate limiting for specific routes
+export async function checkAuthRateLimit(ip: string): Promise<{ allowed: boolean }> {
+  const key = `auth:${ip}`;
+  const result = await checkRateLimit(key);
+  return { allowed: result.allowed };
+}
+
+// Rate limiting for API endpoints
+export async function checkApiRateLimit(key: string): Promise<{ allowed: boolean }> {
+  const result = await checkRateLimit(key);
+  return { allowed: result.allowed };
+}
