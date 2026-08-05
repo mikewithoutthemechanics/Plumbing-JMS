@@ -40,7 +40,7 @@ export default function MaterialsClient({ initialMaterials }: Props) {
       reorder_level: parseFloat(formData.reorder_level) || 0,
       description: formData.description || null,
     };
-    const { error } = await supabase.from('materials').insert(materialData as never);
+    const { error } = await supabase.from('materials').insert(materialData as unknown as { [key: string]: unknown });
     if (error) alert('Error: ' + error.message);
     else {
       setShowModal(false);
@@ -57,7 +57,7 @@ export default function MaterialsClient({ initialMaterials }: Props) {
       setLoading(false);
       return;
     }
-    const { error } = await supabase.from('materials').update({ quantity_on_hand: parseFloat(editQty) } as never).eq('id', material.id);
+    const { error } = await supabase.from('materials').update({ quantity_on_hand: parseFloat(editQty) } as unknown as { [key: string]: unknown }).eq('id', material.id);
     if (error) alert('Error: ' + error.message);
     else {
       setMaterials(materials.map(m => m.id === material.id ? { ...m, quantity_on_hand: parseFloat(editQty) } : m));

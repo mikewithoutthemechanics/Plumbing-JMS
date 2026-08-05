@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { getMockJobs, getMockMaterials } from '@/lib/utils/dev-mock-data';
 import TechnicianMaterialsClient from './page.client';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 interface MaterialSummary {
   id: string;

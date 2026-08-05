@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { getMockCustomers } from '@/lib/utils/dev-mock-data';
 import CustomersClient from './page.client';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export default async function CustomersPage() {
   const cookieStore = await cookies();

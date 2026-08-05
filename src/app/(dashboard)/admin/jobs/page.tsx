@@ -4,7 +4,7 @@ import { getMockJobs } from '@/lib/utils/dev-mock-data';
 import type { JobCard } from '@/types';
 import AdminJobsClient from './page.client';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export default async function AdminJobsPage() {
   const cookieStore = await cookies();

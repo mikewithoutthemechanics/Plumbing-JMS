@@ -49,7 +49,7 @@ export default function TechnicianMaterialsClient({ activeJobs, materials }: { a
         quantity,
         admin_unit_price: 0,
         line_total: 0,
-      } as never);
+      } as unknown as { [key: string]: unknown });
       if (error) alert('Error: ' + error.message);
       else refreshRecent();
     } else if (customName) {
@@ -59,7 +59,7 @@ export default function TechnicianMaterialsClient({ activeJobs, materials }: { a
         quantity,
         admin_unit_price: 0,
         line_total: 0,
-      } as never);
+      } as unknown as { [key: string]: unknown });
       if (error) alert('Error: ' + error.message);
       else {
         setCustomName('');

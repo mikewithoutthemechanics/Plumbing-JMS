@@ -42,7 +42,7 @@ export default function TechnicianJobsClient({ initialJobs, userId }: Props) {
     setLoading(true);
     const { supabase } = await import('@/lib/supabase/client');
     if (!supabase) return;
-    const { error } = await supabase.from('job_cards').update({ status: newStatus } as never).eq('id', jobId);
+    const { error } = await supabase.from('job_cards').update({ status: newStatus } as unknown as { [key: string]: unknown }).eq('id', jobId);
     if (error) alert('Error: ' + error.message);
     else if (selectedJob?.id === jobId) {
       setSelectedJob({ ...selectedJob, status: newStatus });
@@ -74,7 +74,7 @@ const addMaterial = async (jobId: string, materialId: string, quantity: number) 
     };
     const { data, error } = await supabase
       .from('job_materials')
-      .insert(jobMaterialData as never)
+      .insert(jobMaterialData as unknown as { [key: string]: unknown })
       .select()
       .single();
     if (error) alert('Error: ' + error.message);
@@ -83,7 +83,7 @@ const addMaterial = async (jobId: string, materialId: string, quantity: number) 
       const { data: current } = await supabase.from('job_cards').select('materials_cost').eq('id', jobId).single();
       const currentData = current as unknown as { materials_cost?: number } | null;
       const newCost = (currentData?.materials_cost || 0) + resultData.line_total;
-      const { error: updateError } = await supabase.from('job_cards').update({ materials_cost: newCost } as never).eq('id', jobId);
+      const { error: updateError } = await supabase.from('job_cards').update({ materials_cost: newCost } as unknown as { [key: string]: unknown }).eq('id', jobId);
       if (updateError) alert('Error updating material cost: ' + updateError.message);
       if (selectedJob?.id === jobId) {
         const existingMaterials = selectedJob.job_materials || [];
@@ -110,7 +110,7 @@ const addMaterial = async (jobId: string, materialId: string, quantity: number) 
       quantity,
       admin_unit_price: 0,
       line_total: 0,
-    } as never);
+    } as unknown as { [key: string]: unknown });
     if (error) alert('Error: ' + error.message);
     else refreshJobs();
     setLoading(false);

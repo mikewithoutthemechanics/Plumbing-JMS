@@ -1,7 +1,7 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 const MOCK_INVOICED = [
   { id: 'mock-job-2', job_number: 'JOB-MOCK-002', customer: { name: 'Sarah Johnson' }, assigned_to_profile: { full_name: 'Mike the Plumber' }, grand_total: 983.25 },

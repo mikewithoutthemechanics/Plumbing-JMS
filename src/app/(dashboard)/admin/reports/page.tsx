@@ -9,7 +9,7 @@ const MOCK_JOBS = [
   { status: 'invoiced', grand_total: 983.25 },
 ];
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export default async function AdminReportsPage() {
   const cookieStore = await cookies();

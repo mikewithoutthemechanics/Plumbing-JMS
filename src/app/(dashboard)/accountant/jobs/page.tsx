@@ -2,7 +2,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { getMockJobs } from '@/lib/utils/dev-mock-data';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 import AccountantJobsClient from './page.client';
 

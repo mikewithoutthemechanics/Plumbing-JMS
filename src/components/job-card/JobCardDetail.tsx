@@ -39,7 +39,7 @@ export default function JobCardDetail({
     const newValue = !material[field];
     const update: Record<string, unknown> = { [field]: newValue };
     update[field === 'bought' ? 'bought_at' : 'claimed_at'] = newValue ? new Date().toISOString() : null;
-    const { error } = await supabase.from('job_materials').update(update as never).eq('id', material.id);
+    const { error } = await supabase.from('job_materials').update(update as unknown as { [key: string]: unknown }).eq('id', material.id);
     if (error) alert('Error: ' + error.message);
     else onUpdate();
   };
@@ -53,7 +53,7 @@ export default function JobCardDetail({
       customer_id: job.customer_id,
       signatory_name: signatoryName || null,
       signature_data: dataUrl,
-    } as never);
+    } as unknown as { [key: string]: unknown });
     if (error) alert('Error: ' + error.message);
     else onUpdate();
   };
@@ -122,16 +122,16 @@ export default function JobCardDetail({
             const price = (material as { admin_unit_price: number } | null)?.admin_unit_price || 0;
             const { error } = await supabase.from('job_materials').insert({
               job_card_id: jobId, material_id: materialId, quantity, admin_unit_price: price, line_total: price * quantity,
-            } as never);
-            if (error) alert('Error: ' + error.message);
-            else onUpdate();
-          }}
-          onAddCustom={async (jobId, name, quantity) => {
-            const { supabase } = await import('@/lib/supabase/client');
-            if (!supabase) return;
-            const { error } = await supabase.from('job_materials').insert({
-              job_card_id: jobId, custom_name: name, quantity, admin_unit_price: 0, line_total: 0,
-            } as never);
+             } as unknown as { [key: string]: unknown });
+             if (error) alert('Error: ' + error.message);
+             else onUpdate();
+           }}
+           onAddCustom={async (jobId, name, quantity) => {
+             const { supabase } = await import('@/lib/supabase/client');
+             if (!supabase) return;
+             const { error } = await supabase.from('job_materials').insert({
+               job_card_id: jobId, custom_name: name, quantity, admin_unit_price: 0, line_total: 0,
+             } as unknown as { [key: string]: unknown });
             if (error) alert('Error: ' + error.message);
             else onUpdate();
           }}
