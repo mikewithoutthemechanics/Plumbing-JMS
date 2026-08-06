@@ -23,14 +23,14 @@ export default function SessionHandler() {
 
     const { data } = client.auth.onAuthStateChange((_event: string, session: Session | null) => {
       if (session) {
-        router.replace('/');
+        router.replace('/dashboard');
       }
     });
 
     // Fallback in case the SIGNED_IN event was missed.
     const t = setTimeout(async () => {
       const { data: s } = await client.auth.getSession();
-      if (s.session) router.replace('/');
+      if (s.session) router.replace('/dashboard');
     }, 1500);
 
     return () => {
