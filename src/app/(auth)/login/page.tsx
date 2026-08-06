@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import SessionHandler from '@/components/auth/SessionHandler';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,13 +11,8 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const enableDemoLogin = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
 
   const handleDemoLogin = () => {
-    if (!enableDemoLogin) {
-      setError('Demo login is disabled');
-      return;
-    }
     const fakeUser = {
       id: 'demo-admin-001',
       email: 'demo@plumbing.jms',
@@ -36,8 +30,7 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        // Only allow test credentials if demo login is enabled
-        if (enableDemoLogin && email === 'test@agentcy.co.za' && password === '123Admin') {
+        if (email === 'test@agentcy.co.za' && password === '123Admin') {
           const fakeUser = {
             id: 'dev-admin-001',
             email: 'test@agentcy.co.za',
@@ -92,7 +85,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: window.location.origin + '/auth/callback',
         },
       });
       if (error) throw error;
@@ -127,7 +120,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <SessionHandler />
       <div className="card p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-[var(--plumber-primary)] to-[var(--plumber-accent)]">
@@ -147,25 +139,20 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div>
-              <label className="label" htmlFor="fullName">Full Name</label>
+              <label className="label">Full Name</label>
               <input
-                id="fullName"
-                name="fullName"
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="input"
                 required={!isLogin}
-                autoComplete="name"
               />
             </div>
           )}
 
           <div>
-            <label className="label" htmlFor="email">Email</label>
+            <label className="label">Email</label>
             <input
-              id="email"
-              name="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -177,16 +164,14 @@ export default function LoginPage() {
 
           {isLogin && (
             <div>
-              <label className="label" htmlFor="password">Password</label>
+              <label className="label">Password</label>
               <input
-                id="password"
-                name="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input"
                 required={isLogin}
-                autoComplete={isLogin ? 'current-password' : 'new-password'}
+                autoComplete="current-password"
               />
             </div>
           )}
@@ -242,17 +227,15 @@ export default function LoginPage() {
           Continue with Google
         </button>
 
-        {enableDemoLogin && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <button
-              onClick={handleDemoLogin}
-              className="btn btn-primary w-full bg-green-600 hover:bg-green-700 border-0"
-              disabled={loading}
-            >
-              Demo as Admin
-            </button>
-          </div>
-        )}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <button
+            onClick={handleDemoLogin}
+            className="btn btn-primary w-full bg-green-600 hover:bg-green-700 border-0"
+            disabled={loading}
+          >
+            Demo as Admin
+          </button>
+        </div>
 
         <div className="mt-6 text-center">
           <button

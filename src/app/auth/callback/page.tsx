@@ -1,13 +1,16 @@
-import SessionHandler from '@/components/auth/SessionHandler';
+'use client';
 
-export default function Page() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--plumber-primary)] mx-auto mb-4" />
-        <p className="text-gray-600">Completing sign in…</p>
-        <SessionHandler />
-      </div>
-    </div>
-  );
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function CallbackPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // The OAuth callback is handled by Supabase automatically
+    // Redirect to the intended page or dashboard
+    router.push('/dashboard');
+  }, [router]);
+
+  return null; // This page doesn't render anything
 }
