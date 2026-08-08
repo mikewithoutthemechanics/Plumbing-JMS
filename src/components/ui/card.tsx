@@ -2,14 +2,15 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const cardVariants = cva(
-  'rounded-lg border bg-white text-shadow-dark ring-offset-background',
+  'rounded-2xl border border-white/60 bg-white/70 text-foreground shadow-[0_8px_30px_rgba(30,64,175,0.08)] backdrop-blur-xl backdrop-saturate-150 transition-all duration-300',
   {
     variants: {
       variant: {
         default: '',
-        destructive: 'border-destructive/50 bg-destructive text-destructive',
+        destructive: 'border-destructive/40 bg-destructive/5 text-destructive',
         outline: 'border-primary/20',
-        secondary: 'border-secondary/20',
+        secondary: 'border-secondary/30',
+        glass: 'bg-white/60 backdrop-blur-2xl',
       },
     },
     defaultVariants: {

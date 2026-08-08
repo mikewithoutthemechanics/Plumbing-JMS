@@ -90,6 +90,13 @@ export default function DashboardLayout({
 
   const role = user?.role || 'technician';
   const displayName = user?.name || user?.email || '';
+  const initials = (displayName
+    .split(' ')
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()) || 'PP';
 
   const getNavItems = () => {
     switch (role) {
@@ -132,47 +139,59 @@ export default function DashboardLayout({
   if (!user && !isDevMode()) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white/50 background-pattern">
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-[var(--plumber-secondary)]/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-[var(--plumber-primary)] to-[var(--plumber-accent)]">
-                  Punctual Plumbers
-                </h1>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-{navItems.map((item) => (
-                   <Link
-                     key={item.href}
-                     href={item.href}
-                     aria-current={pathname.startsWith(item.href) ? 'page' : undefined}
-                     className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                       pathname.startsWith(item.href)
-                         ? 'border-[var(--plumber-primary)] text-gray-900'
-                         : 'border-transparent text-gray-500 hover:border-[var(--plumber-secondary)]/50 hover:text-gray-700'
-                     }`}
-                   >
-                     <span className="mr-2">{item.icon}</span>
-                     {item.label}
-                   </Link>
-                 ))}
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-40">
+        <nav className="glass border-b border-white/60">
+          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-8">
+              <Link href="/dashboard" className="flex items-center gap-2.5">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-primary-600 to-accent-500 text-white shadow-[0_8px_20px_rgba(37,99,235,0.35)]">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5S5 13 5 15a7 7 0 0 0 7 7z" />
+                  </svg>
+                </span>
+                <h1 className="brand-gradient text-xl font-extrabold">Punctual Plumbers</h1>
+              </Link>
+              <div className="hidden items-center gap-1 md:flex">
+                {navItems.map((item) => {
+                  const active = pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-current={active ? 'page' : undefined}
+                      className={`inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
+                        active
+                          ? 'bg-primary-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)]'
+                          : 'text-secondary-600 hover:bg-white/70 hover:text-primary-700'
+                      }`}
+                    >
+                      <span>{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
-            <div className="flex items-center">
-              <span className="text-sm text-gray-700 mr-4 hidden sm:block">
-                {isDevMode() ? '🔧 ' : ''}{displayName}
-              </span>
-              <button onClick={handleLogout} className="btn btn-outline text-sm">
+            <div className="flex items-center gap-3">
+              <div className="hidden items-center gap-2.5 sm:flex">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-primary-600 to-accent-500 text-sm font-semibold text-white shadow-soft">
+                  {initials}
+                </span>
+                <span className="text-sm font-medium text-secondary-700">
+                  {isDevMode() ? '🔧 ' : ''}
+                  {displayName}
+                </span>
+              </div>
+              <button onClick={handleLogout} className="btn btn-ghost text-sm">
                 Logout
               </button>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}
       </main>
     </div>
