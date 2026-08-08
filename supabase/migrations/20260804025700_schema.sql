@@ -159,11 +159,25 @@ alter table public.banking_details enable row level security;
 alter table public.audit_log enable row level security;
 alter table public.sync_queue enable row level security;
 
+-- Helper: owner check implemented via SECURITY DEFINER so it does NOT
+-- recurse through the RLS policies on profiles (the original inline
+-- subquery caused "infinite recursion detected in policy" -> HTTP 500).
+create or replace function public.is_owner()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.profiles where id = auth.uid() and role = 'owner');
+$$;
+grant execute on function public.is_owner() to anon, authenticated;
+
 -- ===========================
 -- 12. RLS Policies – SELECT (all roles)
 -- ===========================
 create policy "Owner select profiles" on public.profiles for select using (
-  exists (select 1 from public.profiles where id = auth.uid() and role = 'owner')
+  public.is_owner()
 );
 create policy "Technician select own profile" on public.profiles for select using (
   id = auth.uid()
