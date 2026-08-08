@@ -328,6 +328,36 @@ create index if not exists idx_audit_log_changed_at on public.audit_log(changed_
 -- Skip: system triggers cannot be disabled in local dev
 
 -- ===========================
+-- 15b. Auto-create profile on signup
+-- ===========================
+-- Without this, users who sign up get no public.profiles row, so the
+-- dashboard's .single() lookup returns 406 (Not Acceptable).
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, full_name, role)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'full_name', ''),
+    'technician'
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+grant execute on function public.handle_new_user() to anon, authenticated;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- ===========================
 -- 16. Updated_at triggers
 -- ===========================
 create or replace function public.handle_updated_at()
