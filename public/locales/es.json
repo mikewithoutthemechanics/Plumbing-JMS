@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "dashboard": "Panel",
+    "jobs": "Trabajos",
+    "customers": "Clientes",
+    "materials": "Materiales",
+    "admin": "Administración",
+    "technician": "Técnico",
+    "accountant": "Contador"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "add": "Añadir"
+  },
+  "jobs": {
+    "new_job": "Nuevo trabajo",
+    "job_number": "Número de trabajo",
+    "description": "Descripción",
+    "status": "Estado",
+    "assigned_to": "Asignado a",
+    "customer": "Cliente",
+    "hourly_rate": "Tarifa por hora",
+    "no_jobs_found": "No se encontraron trabajos"
+  },
+  "customers": {
+    "new_customer": "Nuevo cliente",
+    "name": "Nombre",
+    "email": "Email",
+    "phone": "Teléfono",
+    "save_customer": "Guardar cliente"
+  },
+  "materials": {
+    "new_material": "Nuevo material",
+    "name": "Nombre",
+    "unit_price": "Precio unitario",
+    "quantity": "Cantidad",
+    "save_material": "Guardar material"
+  }
+}
