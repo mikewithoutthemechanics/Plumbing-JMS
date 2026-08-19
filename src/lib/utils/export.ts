@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 export interface JobExportRow {
   JobNumber: string;
@@ -17,13 +17,18 @@ export interface JobExportRow {
   AdminNotes: string;
 }
 
-export function generateExcelExport(jobs: JobExportRow[], bankingDetails: { bankName: string; accountName: string; accountNumber: string; branchCode: string; referencePrefix: string }) {
-  const wb = XLSX.utils.book_new();
+export async function generateExcelExport(
+  jobs: JobExportRow[],
+  bankingDetails: { bankName: string; accountName: string; accountNumber: string; branchCode: string; referencePrefix: string }
+): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
 
-  const headerRow = ['JOB CARD REPORT', '', '', '', '', '', '', formatDate(new Date())];
+  // Report sheet
+  const reportSheet = workbook.addWorksheet('Report');
+  reportSheet.addRow(['JOB CARD REPORT', '', '', '', '', '', '', formatDate(new Date())]);
 
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headerRow]), 'Report');
-
+  // Banking sheet
+  const bankingSheet = workbook.addWorksheet('Banking');
   const summaryData = [
     ['PAYMENT VIA EFT TO THE FOLLOWING BANK ACCOUNT:'],
     ['Bank:', bankingDetails.bankName],
@@ -34,32 +39,26 @@ export function generateExcelExport(jobs: JobExportRow[], bankingDetails: { bank
     [],
     ['Grand Total:', `=SUM(L2:L${jobs.length + 1})`],
   ];
+  summaryData.forEach(row => bankingSheet.addRow(row));
 
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'Banking');
+  // JobCards sheet
+  const jobCardsSheet = workbook.addWorksheet('JobCards');
+  
+  // Add header row
+  const headers = Object.keys(jobs[0] || {});
+  jobCardsSheet.addRow(headers);
+  
+  // Add data rows
+  jobs.forEach(job => {
+    jobCardsSheet.addRow(Object.values(job));
+  });
 
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(jobs), 'JobCards');
+  // Set column widths
+  const colWidths = [12, 12, 25, 25, 12, 40, 12, 12, 12, 14, 12, 12, 14, 30];
+  jobCardsSheet.columns = colWidths.map(w => ({ width: w }));
 
-  const colWidths = [
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 25 },
-    { wch: 25 },
-    { wch: 12 },
-    { wch: 40 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 14 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 14 },
-    { wch: 30 },
-  ];
-
-  wb.Sheets['JobCards']['!cols'] = colWidths;
-
-  const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-
+  // Generate buffer
+  const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
 }
 
