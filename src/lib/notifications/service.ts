@@ -1,8 +1,17 @@
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { sendJobAssignedEmail, sendEnquiryEmail } from './email';
 
-export async function processJobAssignedNotifications(): Promise<{ processed: number; failed: number }> {
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+interface ProcessResult {
+  processed: number;
+  failed: number;
+  errors?: string[];
+}
+
+export async function processJobAssignedNotifications(): Promise<ProcessResult> {
   const supabase = getSupabaseAdminClient();
+  const errors: string[] = [];
 
   const { data: notifications, error } = await supabase
     .from('job_assigned_notifications')
@@ -10,7 +19,12 @@ export async function processJobAssignedNotifications(): Promise<{ processed: nu
     .eq('status', 'pending')
     .limit(50);
 
-  if (error || !notifications?.length) {
+  if (error) {
+    errors.push(`Failed to fetch pending notifications: ${error.message}`);
+    return { processed: 0, failed: 0, errors };
+  }
+
+  if (!notifications?.length) {
     return { processed: 0, failed: 0 };
   }
 
@@ -19,14 +33,14 @@ export async function processJobAssignedNotifications(): Promise<{ processed: nu
 
   for (const notif of notifications) {
     try {
-      const { data: tech } = await supabase
+      const { data: tech, error: techError } = await supabase
         .from('profiles')
         .select('full_name, email')
         .eq('id', notif.technician_id)
         .single();
 
-      if (!tech?.email) {
-        throw new Error('Technician has no email');
+      if (techError || !tech?.email) {
+        throw new Error(techError?.message || 'Technician has no email');
       }
 
       await sendJobAssignedEmail({
@@ -43,6 +57,8 @@ export async function processJobAssignedNotifications(): Promise<{ processed: nu
         .eq('id', notif.id);
       processed++;
     } catch (e) {
+      const errorMsg = `Job ${notif.job_number}: ${String(e)}`;
+      errors.push(errorMsg);
       await supabase
         .from('job_assigned_notifications')
         .update({ status: 'failed', error_message: String(e) })
@@ -51,11 +67,12 @@ export async function processJobAssignedNotifications(): Promise<{ processed: nu
     }
   }
 
-  return { processed, failed };
+  return { processed, failed, errors: errors.length ? errors : undefined };
 }
 
-export async function processQuoteEnquiryNotifications(): Promise<{ processed: number; failed: number }> {
+export async function processQuoteEnquiryNotifications(): Promise<ProcessResult> {
   const supabase = getSupabaseAdminClient();
+  const errors: string[] = [];
 
   const { data: notifications, error } = await supabase
     .from('quote_enquiry_notifications')
@@ -63,7 +80,12 @@ export async function processQuoteEnquiryNotifications(): Promise<{ processed: n
     .eq('status', 'pending')
     .limit(50);
 
-  if (error || !notifications?.length) {
+  if (error) {
+    errors.push(`Failed to fetch pending notifications: ${error.message}`);
+    return { processed: 0, failed: 0, errors };
+  }
+
+  if (!notifications?.length) {
     return { processed: 0, failed: 0 };
   }
 
@@ -86,6 +108,8 @@ export async function processQuoteEnquiryNotifications(): Promise<{ processed: n
         .eq('id', notif.id);
       processed++;
     } catch (e) {
+      const errorMsg = `Quote ${notif.quote_id}: ${String(e)}`;
+      errors.push(errorMsg);
       await supabase
         .from('quote_enquiry_notifications')
         .update({ status: 'failed', error_message: String(e) })
@@ -94,7 +118,5 @@ export async function processQuoteEnquiryNotifications(): Promise<{ processed: n
     }
   }
 
-  return { processed, failed };
+  return { processed, failed, errors: errors.length ? errors : undefined };
 }
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';

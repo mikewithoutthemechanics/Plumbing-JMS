@@ -3,6 +3,15 @@ import { sendViaAgentMail } from './agentmail';
 const FROM_NAME = process.env.FROM_NAME || 'Punctual Plumbers';
 const OWNER_NOTIFICATION_EMAIL = process.env.OWNER_NOTIFICATION_EMAIL || 'punctualplumbers@outlook.co.za';
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&')
+    .replace(/</g, '<')
+    .replace(/>/g, '>')
+    .replace(/"/g, '"')
+    .replace(/'/g, '&#039;');
+}
+
 export async function sendJobAssignedEmail({
   to,
   technicianName,
@@ -17,18 +26,18 @@ export async function sendJobAssignedEmail({
   jobUrl: string;
 }) {
   const html = `
-      <p>Hi ${technicianName},</p>
+      <p>Hi ${escapeHtml(technicianName)},</p>
       <p>A new job has been assigned to you:</p>
       <ul>
-        <li><strong>Job:</strong> ${jobNumber}</li>
-        <li><strong>Customer:</strong> ${customerName}</li>
+        <li><strong>Job:</strong> ${escapeHtml(jobNumber)}</li>
+        <li><strong>Customer:</strong> ${escapeHtml(customerName)}</li>
       </ul>
-      <p><a href="${jobUrl}">View job in Plumbing JMS</a></p>
-      <p>Regards,<br/>${FROM_NAME}</p>
+      <p><a href="${escapeHtml(jobUrl)}">View job in Plumbing JMS</a></p>
+      <p>Regards,<br/>${escapeHtml(FROM_NAME)}</p>
     `;
   await sendViaAgentMail({
     to,
-    subject: `New job assigned: ${jobNumber}`,
+    subject: `New job assigned: ${escapeHtml(jobNumber)}`,
     html,
   });
   return { message_id: 'agentmail' };
@@ -46,13 +55,13 @@ export async function sendJobStatusChangedEmail({
   status: string;
 }) {
   const html = `
-      <p>Hi ${customerName},</p>
-      <p>Your job <strong>${jobNumber}</strong> status is now <strong>${status}</strong>.</p>
-      <p>Regards,<br/>${FROM_NAME}</p>
+      <p>Hi ${escapeHtml(customerName)},</p>
+      <p>Your job <strong>${escapeHtml(jobNumber)}</strong> status is now <strong>${escapeHtml(status)}</strong>.</p>
+      <p>Regards,<br/>${escapeHtml(FROM_NAME)}</p>
     `;
   await sendViaAgentMail({
     to,
-    subject: `Job ${jobNumber} update`,
+    subject: `Job ${escapeHtml(jobNumber)} update`,
     html,
   });
   return { message_id: 'agentmail' };
@@ -74,16 +83,16 @@ export async function sendEnquiryEmail({
   const html = `
       <p>New enquiry received via WebApp</p>
       <ul>
-        <li><strong>Name:</strong> ${customerName}</li>
-        <li><strong>Email:</strong> ${customerEmail}</li>
-        <li><strong>Phone:</strong> ${customerPhone}</li>
-        <li><strong>Description:</strong> ${description}</li>
+        <li><strong>Name:</strong> ${escapeHtml(customerName)}</li>
+        <li><strong>Email:</strong> ${escapeHtml(customerEmail)}</li>
+        <li><strong>Phone:</strong> ${escapeHtml(customerPhone)}</li>
+        <li><strong>Description:</strong> ${escapeHtml(description)}</li>
       </ul>
-      <p><a href="${quoteUrl}">View quote in Admin</a></p>
+      <p><a href="${escapeHtml(quoteUrl)}">View quote in Admin</a></p>
     `;
   await sendViaAgentMail({
     to: OWNER_NOTIFICATION_EMAIL,
-    subject: `New enquiry from ${customerName}`,
+    subject: `New enquiry from ${escapeHtml(customerName)}`,
     html,
   });
   return { message_id: 'agentmail' };

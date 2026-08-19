@@ -25,7 +25,20 @@ CREATE TABLE IF NOT EXISTS quote_enquiry_notifications (
   sent_at TIMESTAMPTZ
 );
 
--- Trigger: job assignment (with error logging, NOT silent swallow)
+-- notification_errors table for tracking trigger failures
+CREATE TABLE IF NOT EXISTS notification_errors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trigger_name TEXT NOT NULL,
+  source_table TEXT NOT NULL,
+  source_record_id UUID,
+  error_message TEXT NOT NULL,
+  error_detail TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notification_errors_created ON notification_errors(created_at DESC);
+
+-- Trigger: job assignment (log failures to notification_errors, don't block main operation)
 CREATE OR REPLACE FUNCTION log_job_assignment()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -36,12 +49,13 @@ BEGIN
   END IF;
   RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'Failed to queue job assignment notification: %', SQLERRM;
+  INSERT INTO notification_errors (trigger_name, source_table, source_record_id, error_message, error_detail)
+  VALUES ('log_job_assignment', 'job_cards', NEW.id, SQLERRM, SQLSTATE);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger: quote enquiry
+-- Trigger: quote enquiry (log failures to notification_errors, don't block main operation)
 CREATE OR REPLACE FUNCTION log_quote_enquiry()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -49,7 +63,8 @@ BEGIN
   VALUES (NEW.id, NEW.customer_name, NEW.customer_email, NEW.customer_phone, NEW.description);
   RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'Failed to queue quote enquiry notification: %', SQLERRM;
+  INSERT INTO notification_errors (trigger_name, source_table, source_record_id, error_message, error_detail)
+  VALUES ('log_quote_enquiry', 'quotes', NEW.id, SQLERRM, SQLSTATE);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
