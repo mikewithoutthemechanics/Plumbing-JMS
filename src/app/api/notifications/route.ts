@@ -3,7 +3,8 @@ import { checkApiRateLimit } from '@/lib/rate-limiter';
 import { processJobAssignedNotifications, processQuoteEnquiryNotifications } from '@/lib/notifications/service';
 
 export async function POST(req: Request) {
-  const ip = new URL(req.url).searchParams.get('ip') || (req.headers.get('x-forwarded-for') || 'unknown');
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
   const ratelimit = await checkApiRateLimit(ip);
   if (!ratelimit.allowed) {
     return NextResponse.json({ error: 'rate limited' }, { status: 429 });

@@ -1,7 +1,10 @@
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { sendJobAssignedEmail, sendEnquiryEmail } from './email';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+if (!APP_URL) {
+  throw new Error('NEXT_PUBLIC_APP_URL environment variable is required');
+}
 
 interface ProcessResult {
   processed: number;
