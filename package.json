@@ -75,7 +75,7 @@
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vite": "^5.2.0",
+    "vite": "latest",
     "vitest": "^4.1.10"
   }
 }
