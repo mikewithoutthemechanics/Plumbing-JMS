@@ -8,8 +8,7 @@
   "crons": [
     {
       "path": "/api/notifications",
-      "schedule": "0 0 * * *",
-      "method": "POST"
+      "schedule": "0 0 * * *"
     }
   ]
 }

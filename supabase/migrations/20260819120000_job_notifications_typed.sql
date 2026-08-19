@@ -45,7 +45,7 @@ BEGIN
   IF NEW.assigned_to IS NOT NULL THEN
     -- For INSERT: OLD is null, so just check NEW.assigned_to IS NOT NULL
     -- For UPDATE: also check that assigned_to actually changed
-    IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.assigned_to != OLD.assigned_to) THEN
+    IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.assigned_to IS DISTINCT FROM OLD.assigned_to) THEN
       INSERT INTO job_assigned_notifications (job_card_id, technician_id, customer_name, job_number)
       SELECT NEW.id, NEW.assigned_to, c.name, NEW.job_number
       FROM customers c WHERE c.id = NEW.customer_id;

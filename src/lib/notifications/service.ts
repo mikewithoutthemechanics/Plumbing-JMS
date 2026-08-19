@@ -1,20 +1,30 @@
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { sendJobAssignedEmail, sendEnquiryEmail } from './email';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
-if (!APP_URL) {
-  throw new Error('NEXT_PUBLIC_APP_URL environment variable is required');
-}
-
 interface ProcessResult {
   processed: number;
   failed: number;
   errors?: string[];
 }
 
+function getAppUrl(): string {
+  const url = process.env.NEXT_PUBLIC_APP_URL;
+  if (!url) {
+    throw new Error('NEXT_PUBLIC_APP_URL environment variable is required');
+  }
+  return url;
+}
+
 export async function processJobAssignedNotifications(): Promise<ProcessResult> {
   const supabase = getSupabaseAdminClient();
   const errors: string[] = [];
+
+  let appUrl: string;
+  try {
+    appUrl = getAppUrl();
+  } catch (e) {
+    return { processed: 0, failed: 0, errors: ['NEXT_PUBLIC_APP_URL is not configured'] };
+  }
 
   const { data: notifications, error } = await supabase
     .from('job_assigned_notifications')
@@ -51,7 +61,7 @@ export async function processJobAssignedNotifications(): Promise<ProcessResult> 
         technicianName: tech.full_name || 'Technician',
         customerName: notif.customer_name,
         jobNumber: notif.job_number,
-        jobUrl: `${APP_URL}/technician/jobs/${notif.job_card_id}`,
+        jobUrl: `${appUrl}/technician/jobs/${notif.job_card_id}`,
       });
 
       await supabase
@@ -76,6 +86,13 @@ export async function processJobAssignedNotifications(): Promise<ProcessResult> 
 export async function processQuoteEnquiryNotifications(): Promise<ProcessResult> {
   const supabase = getSupabaseAdminClient();
   const errors: string[] = [];
+
+  let appUrl: string;
+  try {
+    appUrl = getAppUrl();
+  } catch (e) {
+    return { processed: 0, failed: 0, errors: ['NEXT_PUBLIC_APP_URL is not configured'] };
+  }
 
   const { data: notifications, error } = await supabase
     .from('quote_enquiry_notifications')
@@ -102,7 +119,7 @@ export async function processQuoteEnquiryNotifications(): Promise<ProcessResult>
         customerEmail: notif.customer_email || '',
         customerPhone: notif.customer_phone || '',
         description: notif.description || '',
-        quoteUrl: `${APP_URL}/admin/quotes/${notif.quote_id}`,
+        quoteUrl: `${appUrl}/admin/quotes/${notif.quote_id}`,
       });
 
       await supabase
