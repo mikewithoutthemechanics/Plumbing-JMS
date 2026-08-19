@@ -2,7 +2,13 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/"
+      "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/notifications",
+      "schedule": "*/10 * * * *"
     }
   ]
 }
