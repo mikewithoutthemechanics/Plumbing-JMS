@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "jobs": "Jobs",
+    "customers": "Customers",
+    "materials": "Materials",
+    "admin": "Admin",
+    "technician": "Technician",
+    "accountant": "Accountant"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "add": "Add"
+  },
+  "jobs": {
+    "new_job": "New Job",
+    "job_number": "Job Number",
+    "description": "Description",
+    "status": "Status",
+    "assigned_to": "Assigned To",
+    "customer": "Customer",
+    "hourly_rate": "Hourly Rate",
+    "no_jobs_found": "No jobs found"
+  },
+  "customers": {
+    "new_customer": "New Customer",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "save_customer": "Save Customer"
+  },
+  "materials": {
+    "new_material": "New Material",
+    "name": "Name",
+    "unit_price": "Unit Price",
+    "quantity": "Quantity",
+    "save_material": "Save Material"
+  }
+}

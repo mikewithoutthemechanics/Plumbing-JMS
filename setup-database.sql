@@ -359,3 +359,25 @@ on conflict (id) do update set
   full_name = excluded.full_name,
   email = excluded.email,
   updated_at = now();
+
+-- Insert additional owner profile for Nate
+insert into public.profiles (
+  id,
+  role,
+  full_name,
+  email,
+  created_at,
+  updated_at
+) values (
+  'e6b1a6b5-7ec7-47f1-b6bb-dc87e4aa0e17',   -- auth user ID for Nate
+  'owner',
+  'Nate',
+  'nate@agentcy.co.za',
+  now(),
+  now()
+)
+on conflict (id) do update set
+  role = excluded.role,
+  full_name = excluded.full_name,
+  email = excluded.email,
+  updated_at = now();
