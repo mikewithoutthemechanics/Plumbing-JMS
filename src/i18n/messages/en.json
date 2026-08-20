@@ -1,0 +1,105 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "submit": "Submit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "rememberMe": "Remember me",
+    "signIn": "Sign in",
+    "signUp": "Sign up"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "overview": "Overview",
+    "stats": "Statistics",
+    "recentJobs": "Recent Jobs",
+    "quickActions": "Quick Actions"
+  },
+  "jobs": {
+    "title": "Jobs",
+    "create": "Create Job",
+    "edit": "Edit Job",
+    "details": "Job Details",
+    "jobNumber": "Job Number",
+    "customer": "Customer",
+    "technician": "Technician",
+    "status": "Status",
+    "description": "Description",
+    "materials": "Materials",
+    "labour": "Labour",
+    "total": "Total",
+    "vat": "VAT",
+    "grandTotal": "Grand Total",
+    "statuses": {
+      "pending": "Pending",
+      "assigned": "Assigned",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "to_be_invoiced": "To Be Invoiced",
+      "invoiced": "Invoiced"
+    }
+  },
+  "customers": {
+    "title": "Customers",
+    "create": "Create Customer",
+    "edit": "Edit Customer",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address"
+  },
+  "materials": {
+    "title": "Materials",
+    "create": "Create Material",
+    "edit": "Edit Material",
+    "name": "Name",
+    "description": "Description",
+    "unit": "Unit",
+    "price": "Price",
+    "quantity": "Quantity"
+  },
+  "export": {
+    "title": "Export",
+    "download": "Download",
+    "export": "Export",
+    "jobCards": "Job Cards",
+    "dateRange": "Date Range",
+    "format": "Format"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "account": "Account",
+    "notifications": "Notifications",
+    "language": "Language",
+    "theme": "Theme"
+  },
+  "errors": {
+    "notFound": "Not found",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Forbidden",
+    "serverError": "Server error",
+    "validationError": "Validation error"
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "submit": "Enviar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "rememberMe": "Recordarme",
+    "signIn": "Iniciar sesión",
+    "signUp": "Registrarse"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "overview": "Resumen",
+    "stats": "Estadísticas",
+    "recentJobs": "Trabajos recientes",
+    "quickActions": "Acciones rápidas"
+  },
+  "jobs": {
+    "title": "Trabajos",
+    "create": "Crear trabajo",
+    "edit": "Editar trabajo",
+    "details": "Detalles del trabajo",
+    "jobNumber": "Número de trabajo",
+    "customer": "Cliente",
+    "technician": "Técnico",
+    "status": "Estado",
+    "description": "Descripción",
+    "materials": "Materiales",
+    "labour": "Mano de obra",
+    "total": "Total",
+    "vat": "IVA",
+    "grandTotal": "Total",
+    "statuses": {
+      "pending": "Pendiente",
+      "assigned": "Asignado",
+      "in_progress": "En progreso",
+      "completed": "Completado",
+      "to_be_invoiced": "Por facturar",
+      "invoiced": "Facturado"
+    }
+  },
+  "customers": {
+    "title": "Clientes",
+    "create": "Crear cliente",
+    "edit": "Editar cliente",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "address": "Dirección"
+  },
+  "materials": {
+    "title": "Materiales",
+    "create": "Crear material",
+    "edit": "Editar material",
+    "name": "Nombre",
+    "description": "Descripción",
+    "unit": "Unidad",
+    "price": "Precio",
+    "quantity": "Cantidad"
+  },
+  "export": {
+    "title": "Exportar",
+    "download": "Descargar",
+    "export": "Exportar",
+    "jobCards": "Tarjetas de trabajo",
+    "dateRange": "Rango de fechas",
+    "format": "Formato"
+  },
+  "settings": {
+    "title": "Configuración",
+    "profile": "Perfil",
+    "account": "Cuenta",
+    "notifications": "Notificaciones",
+    "language": "Idioma",
+    "theme": "Tema"
+  },
+  "errors": {
+    "notFound": "No encontrado",
+    "unauthorized": "No autorizado",
+    "forbidden": "Prohibido",
+    "serverError": "Error del servidor",
+    "validationError": "Error de validación"
+  }
+}
