@@ -51,7 +51,7 @@ export async function GET() {
       AdminNotes: job.admin_notes || '',
     }));
 
-    const buffer = generateExcelExport(
+    const buffer = await generateExcelExport(
       exportRows,
       {
         bankName: banking?.bank_name || '',
@@ -70,7 +70,7 @@ export async function GET() {
       changedBy: user.id,
     });
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       AdminNotes: job.admin_notes || '',
     }));
 
-    const buffer = generateExcelExport(
+    const buffer = await generateExcelExport(
       exportRows,
       {
         bankName: banking?.bank_name || '',
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       changedBy: user.id,
     });
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

@@ -42,10 +42,14 @@ CREATE INDEX IF NOT EXISTS idx_notification_errors_created ON notification_error
 CREATE OR REPLACE FUNCTION log_job_assignment()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.assigned_to IS NOT NULL AND NEW.assigned_to != OLD.assigned_to THEN
-    INSERT INTO job_assigned_notifications (job_card_id, technician_id, customer_name, job_number)
-    SELECT NEW.id, NEW.assigned_to, c.name, NEW.job_number
-    FROM customers c WHERE c.id = NEW.customer_id;
+  IF NEW.assigned_to IS NOT NULL THEN
+    -- For INSERT: OLD is null, so just check NEW.assigned_to IS NOT NULL
+    -- For UPDATE: also check that assigned_to actually changed
+    IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.assigned_to IS DISTINCT FROM OLD.assigned_to) THEN
+      INSERT INTO job_assigned_notifications (job_card_id, technician_id, customer_name, job_number)
+      SELECT NEW.id, NEW.assigned_to, c.name, NEW.job_number
+      FROM customers c WHERE c.id = NEW.customer_id;
+    END IF;
   END IF;
   RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
@@ -72,7 +76,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Attach triggers
 DROP TRIGGER IF EXISTS trigger_job_assigned ON job_cards;
 CREATE TRIGGER trigger_job_assigned
-AFTER UPDATE ON job_cards FOR EACH ROW
+AFTER INSERT OR UPDATE ON job_cards FOR EACH ROW
 EXECUTE FUNCTION log_job_assignment();
 
 DROP TRIGGER IF EXISTS trigger_quote_enquiry ON quotes;
