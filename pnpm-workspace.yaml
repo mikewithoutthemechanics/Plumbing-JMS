@@ -9,6 +9,6 @@ allowBuilds:
 settings:
   auto-install-peers: true
   overrides:
-    serialize-javascript: ^7.0.3
-    sharp: ^0.35.0
-    postcss: ^8.5.23
+    serialize-javascript: ^7.1.0
+    sharp: ^0.35.3
+    postcss: ^8.5.26
