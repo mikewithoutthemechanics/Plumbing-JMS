@@ -8,6 +8,7 @@ import MaterialSelector from '@/components/material-picker/MaterialSelector';
 import SignaturePad from '@/components/job-card/SignaturePad';
 import TenderUploadSection from '@/components/job-card/TenderUploadSection';
 import MaterialsTable from '@/components/job-card/MaterialsTable';
+import JobFinancePanel from '@/components/job-card/JobFinancePanel';
 import type { JobState } from '@/types';
 
 interface Props {
@@ -95,6 +96,9 @@ export default function JobCardDetail({
           </p>
         )}
       </div>
+
+      {/* Finance / Invoice tab */}
+      <JobFinancePanel jobId={job.id} />
 
       {/* Tender / framework upload */}
       <TenderUploadSection
