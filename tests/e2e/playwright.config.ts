@@ -10,7 +10,7 @@ import { defineConfig, devices } from '@playwright/test';
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: '.',
   timeout: 30 * 1000,
   expect: {
     /**
@@ -28,7 +28,7 @@ export default defineConfig({
     /**
      * Base URL to use in actions like `await page.goto('/')`.
      */
-    baseURL: 'http://localhost:3000',
+    baseURL: 'https://plumbing-jms.vercel.app',
 
     /**
      * Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer
