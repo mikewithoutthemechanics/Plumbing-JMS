@@ -4,15 +4,27 @@ import { useState, useEffect } from 'react';
 import { formatDateTime } from '@/lib/utils/calculations';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
 import type { JobCard, AuditLog, Material } from '@/types';
+import AIToolsPanel from '@/components/ai/AIToolsPanel';
+
+export interface JobCounts {
+  total: number;
+  pending: number;
+  toBeInvoiced: number;
+  invoiced: number;
+}
 
 interface Props {
   jobs?: JobCard[];
+  counts?: JobCounts;
   recentAudits?: AuditLog[];
   lowStock?: Material[];
 }
 
-export default function AdminOverviewClient({ jobs: initialJobs = [], recentAudits: initialAudits = [], lowStock: initialLowStock = [] }: Props = {}) {
+const DEFAULT_COUNTS: JobCounts = { total: 0, pending: 0, toBeInvoiced: 0, invoiced: 0 };
+
+export default function AdminOverviewClient({ jobs: initialJobs = [], counts: initialCounts = DEFAULT_COUNTS, recentAudits: initialAudits = [], lowStock: initialLowStock = [] }: Props = {}) {
   const [jobs, setJobs] = useState(initialJobs);
+  const [counts, setCounts] = useState(initialCounts);
   const [recentAudits] = useState(initialAudits);
   const [lowStock] = useState(initialLowStock);
   const [autoAssign, setAutoAssign] = useState(false);
@@ -22,22 +34,38 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], recentAudi
     let channel: { unsubscribe: () => void } | null = null;
     import('@/lib/supabase/client').then(({ supabase }) => {
       if (!supabase) return;
+      const refresh = () => {
+        supabase
+          .from('job_cards')
+          .select('*, customer:customers(name), assigned_to_profile:profiles!job_cards_assigned_to_fkey(full_name, email)')
+          .order('created_at', { ascending: false })
+          .limit(10)
+          .then(({ data }: { data: unknown }) => data && setJobs(data as JobCard[]));
+
+        Promise.all([
+          supabase.from('job_cards').select('*', { count: 'exact', head: true }),
+          supabase.from('job_cards').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+          supabase.from('job_cards').select('*', { count: 'exact', head: true }).eq('status', 'to_be_invoiced'),
+          supabase.from('job_cards').select('*', { count: 'exact', head: true }).eq('status', 'invoiced'),
+        ]).then(([total, pending, toBeInvoiced, invoiced]) => {
+          setCounts({
+            total: total.count ?? 0,
+            pending: pending.count ?? 0,
+            toBeInvoiced: toBeInvoiced.count ?? 0,
+            invoiced: invoiced.count ?? 0,
+          });
+        });
+      };
+
       channel = supabase
         .channel('admin-overview')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'job_cards' }, () => {
-          supabase.from('job_cards').select('*, customer:customers(name), assigned_to_profile:profiles!job_cards_assigned_to_fkey(full_name, email)').order('created_at', { ascending: false }).limit(10)
-            .then(({ data }: { data: unknown }) => data && setJobs(data as JobCard[]));
-        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'job_cards' }, refresh)
         .subscribe();
     });
     return () => {
       if (channel) channel.unsubscribe();
     };
   }, []);
-
-  const pending = jobs.filter(j => j.status === 'pending').length;
-  const toBeInvoiced = jobs.filter(j => j.status === 'to_be_invoiced').length;
-  const invoiced = jobs.filter(j => j.status === 'invoiced').length;
 
   return (
     <div className="space-y-6">
@@ -51,22 +79,22 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], recentAudi
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="card p-5">
           <div className="text-sm font-medium text-gray-500">Total Jobs</div>
-          <div className="text-3xl font-bold text-gray-900 mt-1">{jobs.length}</div>
+          <div className="text-3xl font-bold text-gray-900 mt-1">{counts.total}</div>
           <div className="text-xs text-gray-400 mt-1">Latest activity</div>
         </div>
         <div className="card p-5">
           <div className="text-sm font-medium text-gray-500">Pending</div>
-          <div className="text-3xl font-bold text-yellow-600 mt-1">{pending}</div>
+          <div className="text-3xl font-bold text-yellow-600 mt-1">{counts.pending}</div>
           <div className="text-xs text-gray-400 mt-1">Awaiting assignment</div>
         </div>
         <div className="card p-5">
           <div className="text-sm font-medium text-gray-500">To Be Invoiced</div>
-          <div className="text-3xl font-bold text-blue-600 mt-1">{toBeInvoiced}</div>
+          <div className="text-3xl font-bold text-blue-600 mt-1">{counts.toBeInvoiced}</div>
           <div className="text-xs text-gray-400 mt-1">Ready to invoice</div>
         </div>
         <div className="card p-5">
           <div className="text-sm font-medium text-gray-500">Invoiced</div>
-          <div className="text-3xl font-bold text-green-600 mt-1">{invoiced}</div>
+          <div className="text-3xl font-bold text-green-600 mt-1">{counts.invoiced}</div>
           <div className="text-xs text-gray-400 mt-1">Ready for accountant</div>
         </div>
       </div>
@@ -167,6 +195,8 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], recentAudi
           </div>
         </div>
       </div>
+
+      <AIToolsPanel />
     </div>
   );
 }
