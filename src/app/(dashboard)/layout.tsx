@@ -64,12 +64,19 @@ export default function DashboardLayout({
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, full_name')
+        .select('role, full_name, email, phone')
         .eq('id', user.id)
         .single();
 
-      const profileData = profile as unknown as { role?: string; full_name?: string } | null;
-      setUser({ email: user.email!, role: profileData?.role, name: profileData?.full_name });
+      const profileData = profile as unknown as { role?: string; full_name?: string; email?: string; phone?: string } | null;
+      const userObj = { email: user.email!, role: profileData?.role, name: profileData?.full_name, profile: profileData };
+      setUser({ email: user.email!, role: profileData?.role, name: profileData?.full_name } as any);
+      // Profile setup redirect for technicians
+      if (profileData?.role === 'technician' && (!profileData?.full_name || !profileData?.email || !profileData?.phone)) {
+        router.push('/profile-setup');
+        setLoading(false);
+        return;
+      }
       setLoading(false);
     };
 

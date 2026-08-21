@@ -85,20 +85,20 @@ export default function JobCardDetail({
         {job.assigned_to_profile && (
           <p className="text-sm text-gray-500">Assigned to: {job.assigned_to_profile.full_name}</p>
         )}
-        {job.admin_notes && (
+        {job.admin_notes && canManage && (
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-800"><strong>Admin Notes:</strong> {job.admin_notes}</p>
           </div>
         )}
-        {job.grand_total > 0 && (
+        {canManage && job.grand_total > 0 && (
           <p className="text-sm text-gray-700 mt-3 font-medium">
             Total: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(job.grand_total)}
           </p>
         )}
       </div>
 
-      {/* Finance / Invoice tab */}
-      <JobFinancePanel jobId={job.id} />
+      {/* Finance / Invoice tab - owners only */}
+      {canManage && <JobFinancePanel jobId={job.id} />}
 
       {/* Tender / framework upload */}
       <TenderUploadSection
