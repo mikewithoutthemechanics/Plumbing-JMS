@@ -30,6 +30,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [formData, setFormData] = useState({
+    job_number: '',
     customer_id: '',
     description: '',
     admin_hourly_rate: '',
@@ -76,18 +77,23 @@ export default function AdminJobsClient({ initialJobs }: Props) {
       return;
     }
     const jobData = {
+      job_number: formData.job_number.trim() || `JOB-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
       customer_id: formData.customer_id,
       description: formData.description,
       admin_hourly_rate: parseFloat(formData.admin_hourly_rate),
       admin_notes: formData.admin_notes,
       assigned_to: formData.assigned_to || null,
       status: formData.assigned_to ? 'assigned' : 'pending',
+      created_by: (await supabase.auth.getSession()).data.session?.user?.id,
     };
     const { error } = await supabase.from('job_cards').insert(jobData as unknown as { [key: string]: unknown });
     if (error) alert('Error: ' + error.message);
     else {
+      if (formData.assigned_to) {
+        fetch('/api/notifications', { method: 'POST' }).catch(() => {});
+      }
       setShowCreateModal(false);
-      setFormData({ customer_id: '', description: '', admin_hourly_rate: '', admin_notes: '', assigned_to: '' });
+      setFormData({ job_number: '', customer_id: '', description: '', admin_hourly_rate: '', admin_notes: '', assigned_to: '' });
       refreshJobs();
     }
     setLoading(false);
@@ -251,6 +257,17 @@ export default function AdminJobsClient({ initialJobs }: Props) {
           <div className="card p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Create Job Card</h2>
             <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="label">Job Number (optional)</label>
+                <input
+                  type="text"
+                  value={formData.job_number}
+                  onChange={(e) => setFormData({ ...formData, job_number: e.target.value })}
+                  className="input"
+                  placeholder="e.g. PLB-2026-001 (auto-generated if blank)"
+                />
+              </div>
+
               <div>
                 <label className="label">Customer</label>
                 <div className="flex gap-2">

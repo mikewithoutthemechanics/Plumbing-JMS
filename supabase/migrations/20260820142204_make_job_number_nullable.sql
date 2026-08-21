@@ -1,0 +1,1 @@
+ALTER TABLE public.job_cards ALTER COLUMN job_number DROP NOT NULL;

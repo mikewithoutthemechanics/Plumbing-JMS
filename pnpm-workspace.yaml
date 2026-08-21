@@ -1,11 +1,14 @@
 packages:
   - .
 allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  esbuild: true
   sharp: true
   unrs-resolver: true
 settings:
   auto-install-peers: true
   overrides:
-    serialize-javascript: ^7.0.3
-    sharp: ^0.35.0
-    postcss: ^8.5.23
+    serialize-javascript: ^7.1.0
+    sharp: ^0.35.3
+    postcss: ^8.5.26

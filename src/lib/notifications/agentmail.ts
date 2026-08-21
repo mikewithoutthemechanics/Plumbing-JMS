@@ -28,8 +28,9 @@ export async function sendViaAgentMail({ to, subject, html, text }: EmailParams)
   }
 
   const data = await res.json();
-  if (!data.id) {
+  const messageId = data.id || data.message_id;
+  if (!messageId) {
     throw new Error(`AgentMail response missing message ID: ${JSON.stringify(data)}`);
   }
-  return { message_id: data.id };
+  return { message_id: messageId };
 }

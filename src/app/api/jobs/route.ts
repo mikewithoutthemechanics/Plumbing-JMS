@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/utils/audit';
 import { validateJobInput } from '@/lib/validation';
 import { canAdvanceState, canAccessJob, canSeePricing } from '@/lib/utils/permissions';
+import { processJobAssignedNotifications } from '@/lib/notifications/service';
 
 export async function GET(request: NextRequest) {
   const supabase = await getSupabaseServerClient();
@@ -143,6 +144,10 @@ export async function POST(request: NextRequest) {
       changedBy: user.id,
     });
 
+    if (finalAssignedTo) {
+      await processJobAssignedNotifications();
+    }
+
     return NextResponse.json({ job }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -228,6 +233,10 @@ export async function PATCH(request: NextRequest) {
           }
         }
       }
+    }
+
+    if (assigned_to !== undefined && assigned_to !== existingJob.assigned_to) {
+      await processJobAssignedNotifications();
     }
 
     await logAudit({

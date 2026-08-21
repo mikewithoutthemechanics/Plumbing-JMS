@@ -1,5 +1,7 @@
 import withBundleAnalyzer from '@next/bundle-analyzer';
-import withNextIntl from 'next-intl';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const baseConfig = {
   reactStrictMode: true,
