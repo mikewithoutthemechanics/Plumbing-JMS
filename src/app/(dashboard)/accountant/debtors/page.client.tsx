@@ -161,9 +161,7 @@ export default function DebtorsClient({ initialDebtors, totalOutstanding }: Prop
                     <td className="px-4 py-2 text-red-600 font-medium">{fmt(i.amount_due - i.amount_paid)}</td>
                     <td className="px-4 py-2"><span className={`px-2 py-1 rounded-full text-xs ${i.status === 'partial' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{i.status}</span></td>
                     <td className="px-4 py-2">
-                      <button onClick={() => sendReminder(i.id)} disabled={loading} className="btn btn-secondary text-xs">
-                        WhatsApp
-                      </button>
+                      {/* WhatsApp removed */}
                     </td>
                   </tr>
                 ))}
