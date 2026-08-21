@@ -184,3 +184,69 @@ Files touched: supabase/migrations/20260820170020_phase_c_integration_policies.s
   4) Accountant SELECT profiles: temporary role change of profile 4e845dbf-868b-4828-a446-eda8b2d8e7e8 to accountant; SET ROLE authenticated with sub same → SELECT public.profiles returns all 7 rows; reverted role to owner.
 - Cleanup: test quote rows removed (cleanup done), tmp tables dropped (0 remaining), job_materials test row deleted, profile role restored.
 - Functional: no out-of-scope files touched; git diff --name-only shows only the three new migrations. Tracker append-only maintained.
+
+### [2026-08-21 13:51:52] Agent Codebase-Health — 7-item integration — START
+Phase: Codebase Health | Files owned: next.config.mjs, postcss.config.js, postcss.config.cjs, tailwind.config.js.backup2, REMEDIATION_TRACKER.md, outstanding.md, src/middleware.ts, src/lib/logger.ts, src/lib/db/, tests/ | Depends on: none
+### [2026-08-21 13:52:10] Agent Codebase-Health — 7-item integration — VALIDATED
+Evidence (proof, from the before-state):
+- postcss.config.cjs exists and contains ESM export inside .cjs file (read confirmed)
+- tailwind.config.js.backup2 exists in root
+- src/lib/db/ directory exists but empty (ls confirmed)
+### [2026-08-21 13:52:15] Agent Codebase-Health — 7-item integration — EDITED
+Files touched (deleted): postcss.config.cjs, tailwind.config.js.backup2
+Change summary: Removed duplicate/conflicting PostCSS config and legacy Tailwind backup to avoid build ambiguity.
+
+### [2026-08-21 13:54:00] Agent Codebase-Health — 7-item integration — EDITED
+Files touched (deleted): src/lib/db
+Files touched (modified): next.config.mjs, src/middleware.ts
+Change summary:
+- Removed empty src/lib/db/ directory
+- Tightened CSP headers: added frame-ancestors, base-uri, expanded img-src to supabase CDN, added X-Content-Type-Options and Referrer-Policy
+- Middleware now returns 503 if Supabase env vars missing instead of silent passthrough
+- Replaced console.log/console.error in middleware with structured logger.debug/logger.error
+
+### [2026-08-21 13:55:00] Agent Codebase-Health — 7-item integration — VERIFIED
+- tsc: pass (npx tsc --noEmit, exit 0)
+- Files removed verified: postcss.config.cjs, tailwind.config.js.backup2, src/lib/db/ absent
+- next.config.mjs CSP headers updated confirmed
+- src/middleware.ts logger import and usage confirmed, env missing returns 503
+
+### [2026-08-21 14:07:00] Agent Codebase-Health — 7-item integration — EDITED
+Files touched: docs/archived/outstanding-legacy-precision-plumbing.md (new), outstanding.md (modified), src/lib/__tests__/logger.test.ts (new)
+Change summary:
+- Archived legacy Precision Plumbing review items to docs/archived/outstanding-legacy-precision-plumbing.md
+- Updated outstanding.md to remove stale P0/P1/P2 sections and reference archive
+- Added starter unit test src/lib/__tests__/logger.test.ts to bootstrap real test coverage
+
+### [2026-08-21 14:07:30] Agent Codebase-Health — 7-item integration — VERIFIED
+- Archive file exists and contains legacy P0/P1/P2 items
+- outstanding.md now references archive and contains no stale component references
+- logger.test.ts runs: 2 tests passed via vitest --pool=forks
+- tsc --noEmit passes
+
+### [2026-08-21 14:23:00] Agent Codebase-Health — 7-item integration — EDITED
+Files touched: src/lib/__tests__/validation.test.ts (new)
+Change summary: Added unit tests for validation schemas to bootstrap real test coverage for Zod-based inputs
+
+### [2026-08-21 14:23:30] Agent Codebase-Health — 7-item integration — VERIFIED
+- validation.test.ts runs: 4 tests passed via vitest --pool=forks
+- tsc --noEmit passes
+
+### [2026-08-21 14:29:00] Agent Codebase-Health — 7-item integration — EDITED
+Files touched: src/lib/__tests__/rate-limiter.test.ts (new)
+Change summary: Added unit test for rate-limiter wrapper with mocked Supabase client
+
+### [2026-08-21 14:29:30] Agent Codebase-Health — 7-item integration — VERIFIED
+- rate-limiter.test.ts runs: 1 test passed via vitest --pool=forks
+- tsc --noEmit passes
+
+### [2026-08-21 14:30:00] Agent Codebase-Health — 7-item integration — COMPLETED
+Summary: All 7 recommendations integrated:
+1. Clean configs – removed postcss.config.cjs, tailwind.config.js.backup2
+2. Prune stale docs – archived Precision Plumbing items to docs/archived/outstanding-legacy-precision-plumbing.md, updated outstanding.md
+3. Tighten security headers – CSP with frame-ancestors/base-uri, img-src supabase, X-Content-Type-Options, Referrer-Policy
+4. Harden middleware env – 503 on missing Supabase env vars
+5. Migrate console logs – middleware now uses logger.debug/logger.error
+6. Remove empty src/lib/db/ – directory removed
+7. Real unit tests – logger.test.ts, validation.test.ts, rate-limiter.test.ts added and passing
+Overall verification: tsc --noEmit passes, vitest tests pass, tracker append-only maintained.

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limiter";
+import { logger } from "@/lib/logger";
 
 export async function middleware(request: NextRequest) {
   try {
     // Request logging (dev only)
     if (process.env.NODE_ENV !== "production") {
-      console.log(`${request.method} ${request.nextUrl.pathname}`);
+      logger.debug(`${request.method} ${request.nextUrl.pathname}`);
     }
 
     // CSRF protection - check origin for non-GET/HEAD/OPTIONS
@@ -52,7 +53,7 @@ export async function middleware(request: NextRequest) {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.next();
+      return new NextResponse('Supabase configuration missing', { status: 503 });
     }
 
     const { createServerClient } = await import("@supabase/ssr");
@@ -127,7 +128,7 @@ export async function middleware(request: NextRequest) {
     }
   } catch (err) {
     if (process.env.NODE_ENV !== "production") {
-      console.error("[Middleware] Error:", err);
+      logger.error("[Middleware] Error:", { error: err });
     }
     return NextResponse.next();
   }

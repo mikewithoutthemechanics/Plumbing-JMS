@@ -43,17 +43,27 @@ export default function AdminJobDetailClient({ jobId }: { jobId: string }) {
     setLoading(true);
     const { supabase } = await import('@/lib/supabase/client');
     if (!supabase) { setLoading(false); return; }
-    const { error } = await supabase.from('job_cards').update({ status: newStatus } as unknown as { [key: string]: unknown }).eq('id', id);
-    if (error) setError(error.message);
-    else {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/jobs', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token}`
+      },
+      body: JSON.stringify({ job_id: id, status: newStatus })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setError(err.error || 'Failed to update');
+    } else {
       if (newStatus === 'to_be_invoiced') {
-        const res = await fetch('/api/invoices', {
+        const resInv = await fetch('/api/invoices', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ job_card_id: id }),
         });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
+        if (!resInv.ok) {
+          const err = await resInv.json().catch(() => ({}));
           alert('Invoice generation: ' + (err.error || 'failed'));
         }
       }
