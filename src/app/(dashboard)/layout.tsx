@@ -114,7 +114,6 @@ export default function DashboardLayout({
           { href: '/admin/staff', label: 'Staff', icon: '👷' },
           { href: '/admin/customers', label: 'Customers', icon: '👥' },
           { href: '/admin/materials', label: 'Materials', icon: '📦' },
-          { href: '/admin/whatsapp', label: 'WhatsApp', icon: '💬' },
         ];
       case 'technician':
         return [
