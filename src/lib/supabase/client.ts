@@ -24,5 +24,20 @@ function getSupabase() {
   return _supabase;
 }
 
-// Export for use - will be null during prerender or if env vars missing
-export const supabase = getSupabase();
+// Export a function so it initializes on client-side (not at module load during SSR)
+export const createSupabaseClient = () => getSupabase();
+export const getSupabaseClient = () => getSupabase();
+export function getClient() {
+  return getSupabase();
+}
+
+// For backward compatibility - use a Proxy that lazily initializes on first property access
+// This works because during SSR the Proxy returns null for all properties, but on client
+// the first access (e.g., supabase.auth) will call getSupabase() and return the real client
+export const supabase = new Proxy({} as ReturnType<typeof createBrowserClient>, {
+  get(_target, prop) {
+    const client = getSupabase();
+    if (!client) return undefined;
+    return (client as Record<string, unknown>)[prop as string];
+  },
+});
