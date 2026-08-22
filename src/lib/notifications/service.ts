@@ -1,5 +1,6 @@
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { sendJobAssignedEmail, sendEnquiryEmail } from './email';
+import { sendPushToMultiple } from './push';
 
 interface ProcessResult {
   processed: number;
@@ -63,6 +64,38 @@ export async function processJobAssignedNotifications(): Promise<ProcessResult> 
         jobNumber: notif.job_number,
         jobUrl: `${appUrl}/technician/jobs/${notif.job_card_id}`,
       });
+
+      // Send push notification
+      try {
+        const { data: subscriptions } = await supabase
+          .from('push_subscriptions')
+          .select('endpoint, p256dh, auth')
+          .eq('user_id', notif.technician_id);
+
+        if (subscriptions?.length) {
+          await sendPushToMultiple(
+            subscriptions.map(s => ({
+              endpoint: s.endpoint,
+              keys: { p256dh: s.p256dh, auth: s.auth },
+            })),
+            {
+              title: 'New Job Assigned',
+              body: `${notif.customer_name} - ${notif.job_number}`,
+              icon: '/icon-192.png',
+              badge: '/badge-72.png',
+              data: {
+                url: `${appUrl}/technician/jobs/${notif.job_card_id}`,
+                tag: `job-${notif.job_card_id}`,
+              },
+              requireInteraction: true,
+              vibrate: [200, 100, 200],
+            }
+          );
+        }
+      } catch (pushError) {
+        console.error('[Push] Failed to send job assigned push:', pushError);
+        // Don't fail the whole notification if push fails
+      }
 
       await supabase
         .from('job_assigned_notifications')

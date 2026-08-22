@@ -1,8 +1,11 @@
-/// <reference lib="webworker" />
-const CACHE_NAME = 'plumbing-jms-cache-v1';
+// Service Worker for Push Notifications
+// This file is served from /sw.js
+
+const CACHE_NAME = 'plumbing-jms-v1';
 const STATIC_ASSETS = [
   '/',
-  '/dashboard',
+  '/login',
+  '/manifest.json',
 ];
 
 self.addEventListener('install', (event) => {
@@ -14,41 +17,95 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
-    )
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      );
+    })
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  if (request.method !== 'GET') return;
+  if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const networkFetch = fetch(request).then((response) => {
-        if (response && response.status === 200) {
+    caches.match(event.request).then((cached) => {
+      const fetchPromise = fetch(event.request).then((response) => {
+        if (response.ok && event.request.url.startsWith(self.location.origin)) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
       }).catch(() => cached);
-
-      return cached || networkFetch;
+      return cached || fetchPromise;
     })
   );
 });
 
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'background-sync') {
-    event.waitUntil(syncPendingData());
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
+    const payload = event.data.json();
+
+    const options: NotificationOptions = {
+      body: payload.body,
+      icon: payload.icon || '/icon-192.png',
+      badge: payload.badge || '/badge-72.png',
+      data: payload.data || {},
+      actions: payload.actions || [],
+      requireInteraction: payload.requireInteraction || false,
+      silent: payload.silent || false,
+      timestamp: payload.timestamp || Date.now(),
+      vibrate: payload.vibrate || [200, 100, 200],
+      tag: payload.data?.tag || 'plumbing-jms-notification',
+      renotify: true,
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(payload.title, options)
+    );
+  } catch (error) {
+    console.error('[SW] Push parse error:', error);
   }
 });
 
-async function syncPendingData() {
-  const clients = await self.clients.matchAll();
-  clients.forEach((client) => {
-    client.postMessage({ type: 'SYNC_REQUESTED' });
-  });
-}
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const data = event.notification.data || {};
+  const action = event.action;
+
+  let targetUrl = '/';
+
+  if (action && data.actions) {
+    const actionConfig = data.actions.find((a: { action: string; url?: string }) => a.action === action);
+    if (actionConfig?.url) targetUrl = actionConfig.url;
+  } else if (data.url) {
+    targetUrl = data.url;
+  }
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus().then(() => client.navigate(targetUrl));
+        }
+      }
+      return clients.openWindow(targetUrl);
+    })
+  );
+});
+
+self.addEventListener('notificationclose', (event) => {
+  console.log('[SW] Notification closed:', event.notification.tag);
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data === 'skipWaiting') {
+    self.skipWaiting();
+  }
+});
+
+export {};

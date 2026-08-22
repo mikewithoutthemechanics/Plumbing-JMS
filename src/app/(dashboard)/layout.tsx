@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants/storage';
+import { usePushNotifications } from '@/lib/hooks/usePushNotifications';
 
 interface DevAuth {
   user: { id: string; email: string; user_metadata: { full_name: string } };
@@ -36,6 +37,21 @@ export default function DashboardLayout({
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const { supported, permission, subscribed, subscribe } = usePushNotifications();
+
+  useEffect(() => {
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(console.error);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Auto-subscribe technicians to push notifications
+    if (supported && permission === 'granted' && !subscribed && user?.role === 'technician') {
+      subscribe().catch(console.error);
+    }
+  }, [supported, permission, subscribed, subscribe, user?.role]);
 
   useEffect(() => {
     const initAuth = async () => {
