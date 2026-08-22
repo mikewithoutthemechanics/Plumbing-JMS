@@ -4,6 +4,8 @@ import { sendPushToMultiple, PushPayload } from '@/lib/notifications/push';
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${CRON_SECRET}`) {
