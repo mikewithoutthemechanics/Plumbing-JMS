@@ -69,7 +69,8 @@ export async function middleware(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const devMode = request.cookies.get('dev_admin')?.value === '1' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+    const demoModeEnv = process.env.NEXT_PUBLIC_DEMO_MODE;
+    const devMode = request.cookies.get('dev_admin')?.value === '1' || demoModeEnv === 'true' || demoModeEnv === '1' || demoModeEnv === 'TRUE';
 
     const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
 
