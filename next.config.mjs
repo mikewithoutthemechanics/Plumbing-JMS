@@ -23,7 +23,7 @@ const baseConfig = {
           {
             key: 'Content-Security-Policy',
             value:
-              "default-src 'self'; script-src 'self' https://js.stripe.com; img-src 'self' data: https://*.supabase.co; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self';",
+              "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; img-src 'self' data: https://*.supabase.co; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self';",
           },
           {
             key: 'X-Content-Type-Options',
