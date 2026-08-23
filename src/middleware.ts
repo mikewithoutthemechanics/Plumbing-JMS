@@ -83,7 +83,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    if ((user || devMode) && isPublicRoute) {
+    if (user && isPublicRoute) {
       return NextResponse.redirect(
         new URL("/admin/overview", request.url),
       );
