@@ -96,7 +96,7 @@ export function usePushNotifications() {
         },
       };
 
-      const response = await fetch('/api/push/subscribe', {
+      const response = await fetch('/api/notifications/webpush/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription: pushSubscription }),
@@ -135,7 +135,7 @@ export function usePushNotifications() {
         await subscription.unsubscribe();
       }
 
-      await fetch(`/api/push/subscribe?endpoint=${encodeURIComponent(state.subscription.endpoint)}`, {
+      await fetch(`/api/notifications/webpush/subscribe?endpoint=${encodeURIComponent(state.subscription.endpoint)}`, {
         method: 'DELETE',
       });
 
@@ -170,7 +170,7 @@ export function usePushNotifications() {
 
 async function getVapidPublicKey(): Promise<string | null> {
   try {
-    const res = await fetch('/api/push/vapid-key');
+    const res = await fetch('/api/notifications/webpush/vapid-key');
     if (!res.ok) return null;
     const data = await res.json();
     return data.publicKey || null;
