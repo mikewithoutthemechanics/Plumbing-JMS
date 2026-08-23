@@ -12,17 +12,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleDemoLogin = () => {
-    const fakeUser = {
-      id: 'demo-admin-001',
-      email: 'demo@plumbing.jms',
-      user_metadata: { full_name: 'Demo Admin' },
-    };
-    localStorage.setItem('devAuth', JSON.stringify({ user: fakeUser, role: 'owner' }));
-    document.cookie = 'dev_admin=1; path=/; max-age=86400';
-    window.location.href = '/admin/overview';
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -30,18 +19,6 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        if (email === 'test@agentcy.co.za' && password === '123Admin') {
-          const fakeUser = {
-            id: 'dev-admin-001',
-            email: 'test@agentcy.co.za',
-            user_metadata: { full_name: 'Dev Admin' },
-          };
-          localStorage.setItem('devAuth', JSON.stringify({ user: fakeUser, role: 'owner' }));
-          document.cookie = 'dev_admin=1; path=/; max-age=86400';
-          window.location.href = '/admin/overview';
-          return;
-        }
-
         const { supabase } = await import('@/lib/supabase/client');
         if (!supabase) {
           setError('Supabase not configured');
@@ -213,16 +190,6 @@ export default function LoginPage() {
           </svg>
           Continue with Google
         </button>
-
-        <div className="mt-6 border-t border-white/15 pt-6">
-          <button
-            onClick={handleDemoLogin}
-            className="btn btn-accent w-full"
-            disabled={loading}
-          >
-            Demo as Admin
-          </button>
-        </div>
 
         <div className="mt-6 text-center">
           <button
