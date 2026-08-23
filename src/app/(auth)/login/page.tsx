@@ -20,7 +20,7 @@ export default function LoginPage() {
     };
     localStorage.setItem('devAuth', JSON.stringify({ user: fakeUser, role: 'owner' }));
     document.cookie = 'dev_admin=1; path=/; max-age=86400';
-    router.push('/admin/overview');
+    window.location.href = '/admin/overview';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +38,7 @@ export default function LoginPage() {
           };
           localStorage.setItem('devAuth', JSON.stringify({ user: fakeUser, role: 'owner' }));
           document.cookie = 'dev_admin=1; path=/; max-age=86400';
-          router.push('/admin/overview');
+          window.location.href = '/admin/overview';
           return;
         }
 
