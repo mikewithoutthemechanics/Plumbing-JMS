@@ -86,7 +86,7 @@ export default function DashboardLayout({
 
       const profileData = profile as unknown as { role?: string; full_name?: string; email?: string; phone?: string } | null;
       const userObj = { email: user.email!, role: profileData?.role, name: profileData?.full_name, profile: profileData };
-      setUser({ email: user.email!, role: profileData?.role, name: profileData?.full_name } as any);
+      setUser({ email: user.email!, role: profileData?.role, name: profileData?.full_name });
       // Profile setup redirect for technicians
       if (profileData?.role === 'technician' && (!profileData?.full_name || !profileData?.email || !profileData?.phone)) {
         router.push('/profile-setup');

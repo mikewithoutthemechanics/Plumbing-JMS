@@ -28,8 +28,26 @@ export async function POST(request: NextRequest) {
   const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // H1 guard: unauthenticated submissions come from the public quote form
+  // (allowed by design). Any authenticated user must be owner/accountant —
+  // technicians may not create quotes.
+  if (user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (!profile || !['owner', 'accountant'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+  }
+
+  // M1 guard: basic anti-spam validation for public (and authenticated) posts.
   const body = await request.json();
   const { customer_name, customer_email, customer_phone, description } = body;
+
+  if (!customer_name || typeof customer_name !== 'string' || customer_name.trim().length < 2 || customer_name.length > 120) {
+    return NextResponse.json({ error: 'Valid customer name is required' }, { status: 400 });
+  }
+  if (customer_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer_email)) {
+    return NextResponse.json({ error: 'Invalid customer email' }, { status: 400 });
+  }
 
   const { data: quote, error } = await supabase
     .from('quotes')

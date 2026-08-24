@@ -154,10 +154,26 @@ export function usePushNotifications() {
     }
   }, [state.subscription]);
 
+  // Hygiene fix: async init moved into an inner async function so the effect
+  // body itself performs no synchronous state updates (react-hooks rule).
   useEffect(() => {
-    checkSupport();
-    checkPermission();
-    checkSubscription();
+    let cancelled = false;
+
+    const init = async () => {
+      checkSupport();
+      await checkPermission();
+      await checkSubscription();
+    };
+
+    init().catch(() => {
+      if (!cancelled) {
+        setState(prev => ({ ...prev, error: prev.error ?? 'Push init failed' }));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [checkSupport, checkPermission, checkSubscription]);
 
   return {

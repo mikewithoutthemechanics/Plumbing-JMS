@@ -8,7 +8,7 @@ export default function AIToolsPanel() {
   const [task, setTask] = useState<Task>('triage');
   const [input, setInput] = useState('');
   const [context, setContext] = useState('{}');
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
 
   const run = async () => {

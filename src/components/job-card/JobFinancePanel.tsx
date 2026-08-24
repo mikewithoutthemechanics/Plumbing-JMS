@@ -19,20 +19,34 @@ export default function JobFinancePanel({ jobId }: { jobId: string }) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    const { supabase } = await import('@/lib/supabase/client');
-    if (!supabase) return;
-    const { data } = await supabase
-      .from('invoices')
-      .select('id,invoice_number,amount_due,vat_amount,amount_paid,status,issued_at,paid_at,payments(id,amount,method,created_at,note)')
-      .eq('job_card_id', jobId);
-    setInvoices((data as unknown as Invoice[]) || []);
-    setLoading(false);
-  };
-
+  // Hygiene fix: abort stale fetches when jobId changes; always clear loading.
   useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { supabase } = await import('@/lib/supabase/client');
+        if (!supabase) return;
+        const { data } = await supabase
+          .from('invoices')
+          .select('id,invoice_number,amount_due,vat_amount,amount_paid,status,issued_at,paid_at,payments(id,amount,method,created_at,note)')
+          .eq('job_card_id', jobId)
+          .abortSignal(controller.signal);
+        if (!cancelled) setInvoices((data as unknown as Invoice[]) || []);
+      } catch {
+        // fetch aborted or failed - keep previous invoices
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
     load();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [jobId]);
 
   const totals = useMemo(() => {

@@ -109,6 +109,18 @@ export async function PATCH(request: NextRequest) {
     const { data: invoice } = await supabase.from('invoices').select('*').eq('id', invoice_id).single();
     if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
 
+    // H2 guard: reject overpayments instead of silently recording them.
+    const outstanding = Number(invoice.amount_due) - Number(invoice.amount_paid);
+    if (Number(amount) > outstanding) {
+      return NextResponse.json(
+        {
+          error: `Payment exceeds outstanding balance. Outstanding: R${outstanding.toFixed(2)}.`,
+          outstanding,
+        },
+        { status: 400 }
+      );
+    }
+
     const amountPaid = Number(invoice.amount_paid) + Number(amount);
     const newStatus = amountPaid >= invoice.amount_due ? 'paid' : (amountPaid > 0 ? 'partial' : 'unpaid');
 

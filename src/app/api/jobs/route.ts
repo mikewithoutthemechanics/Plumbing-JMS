@@ -174,6 +174,44 @@ export async function PATCH(request: NextRequest) {
       if (!canAdvanceState(profile.role, existingJob.status, status)) {
         return NextResponse.json({ error: 'Invalid state transition' }, { status: 400 });
       }
+
+      // C1 guard: block transition to 'invoiced' when any job material
+      // exceeds stock on hand. Prevents invoicing materials that do not exist.
+      if (status === 'invoiced' && existingJob.status !== 'invoiced') {
+        const { data: jobMaterials } = await supabase
+          .from('job_materials')
+          .select('material_id, quantity')
+          .eq('job_card_id', job_id);
+
+        if (jobMaterials && jobMaterials.length > 0) {
+          const shortfalls: { material_id: string; required: number; on_hand: number }[] = [];
+          for (const jm of jobMaterials) {
+            if (!jm.material_id) continue;
+            const { data: material } = await supabase
+              .from('materials')
+              .select('name, quantity_on_hand')
+              .eq('id', jm.material_id)
+              .single();
+            const onHand = material?.quantity_on_hand ?? 0;
+            if (onHand < jm.quantity) {
+              shortfalls.push({
+                material_id: jm.material_id,
+                required: jm.quantity,
+                on_hand: onHand,
+              });
+            }
+          }
+          if (shortfalls.length > 0) {
+            return NextResponse.json(
+              {
+                error: 'Cannot invoice: insufficient stock for one or more materials.',
+                shortfalls,
+              },
+              { status: 409 }
+            );
+          }
+        }
+      }
     }
 
     const updates: Record<string, unknown> = {};
