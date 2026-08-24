@@ -39,9 +39,29 @@ Plumbing-JMS is a Next.js 13+ application with React Server Components, Supabase
    > You can find these values in your Supabase project settings under **Settings > API**.
 
 4. **Set up the Supabase database**
-   - Run the SQL scripts in the `supabase/` directory to set up the database schema
-   - Start with `setup-database.sql` or `supabase_setup.sql`
-   - Refer to `supabase_setup_additions.sql` for additional tables if needed
+
+   > ⚠️ **IMPORTANT — use the migrations, not the root SQL files.**
+   > The legacy root-level scripts (`setup-database.sql`, `supabase_setup.sql`,
+   > `supabase_setup_additions.sql`, `final_setup.sql`) are **outdated**: they create
+   > the schema but contain **no Row Level Security policies**. Do NOT run them on a
+   > fresh project.
+
+   The canonical schema lives in versioned migrations under `supabase/migrations/`.
+   Apply them in filename order with the Supabase CLI:
+
+   ```bash
+   npm install -g supabase          # once
+   supabase login                    # once (browser)
+   supabase link --project-ref <your-project-ref>
+   supabase db push                  # applies every migration in order
+   ```
+
+   This includes the security-critical migrations:
+   - `20260820160000_enable_rls_security.sql` — enables RLS + base policies
+   - `20260820170000_harden_rls.sql` — replaces permissive policies with role-checked ones
+
+   Verify after pushing: every public table must show RLS enabled
+   (Supabase Dashboard → Table Editor → each table → "RLS enabled" badge).
 
 ## Development
 
