@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import JobCardDetail from '@/components/job-card/JobCardDetail';
 import type { JobCard, JobMaterial, JobTender, JobSignature } from '@/types';
 import type { JobState } from '@/types';
+import toast from 'react-hot-toast';
 
 interface JobMaterialRow extends JobMaterial {
   materials?: { name: string };
@@ -64,7 +65,7 @@ export default function AdminJobDetailClient({ jobId }: { jobId: string }) {
         });
         if (!resInv.ok) {
           const err = await resInv.json().catch(() => ({}));
-          alert('Invoice generation: ' + (err.error || 'failed'));
+          toast.error('Invoice generation: ' + (err.error || 'failed'));
         }
       }
       await load();

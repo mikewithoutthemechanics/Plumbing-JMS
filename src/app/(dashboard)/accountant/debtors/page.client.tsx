@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Invoice } from '@/types';
+import toast from 'react-hot-toast';
 
 interface Debtor {
   customer_id: string;
@@ -46,10 +47,10 @@ export default function DebtorsClient({ initialDebtors, totalOutstanding }: Prop
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ invoice_id: invoiceId }),
     });
-    if (res.ok) alert('Reminder sent via WhatsApp.');
+    if (res.ok) toast.error('Reminder sent via WhatsApp.');
     else {
       const err = await res.json();
-      alert('WhatsApp error: ' + err.error);
+      toast.error('WhatsApp error: ' + err.error);
     }
     setLoading(false);
   };
@@ -74,7 +75,7 @@ export default function DebtorsClient({ initialDebtors, totalOutstanding }: Prop
       setPayInvoice('');
     } else {
       const err = await res.json();
-      alert('Error: ' + err.error);
+      toast.error('Error: ' + err.error);
     }
     setLoading(false);
   };

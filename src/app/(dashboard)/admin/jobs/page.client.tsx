@@ -7,6 +7,7 @@ import { JOB_STATE_LABELS, JOB_STATES } from '@/lib/constants/job-states';
 import type { JobCard, Customer, Profile, BankingDetails } from '@/types';
 import StateControls from '@/components/job-card/StateControls';
 import type { JobState } from '@/types';
+import toast from 'react-hot-toast';
 
 type AdminJobCard = JobCard & {
   customer?: { name: string };
@@ -87,7 +88,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
       created_by: (await supabase.auth.getSession()).data.session?.user?.id,
     };
     const { error } = await supabase.from('job_cards').insert(jobData as unknown as { [key: string]: unknown });
-    if (error) alert('Error: ' + error.message);
+    if (error) toast.error('Error: ' + error.message);
     else {
       if (formData.assigned_to) {
         fetch('/api/notifications', { method: 'POST' }).catch(() => {});
@@ -116,7 +117,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
       .select()
       .single();
     if (error) {
-      alert('Error: ' + error.message);
+      toast.error('Error: ' + error.message);
     } else {
       setCustomers([...customers, data as Customer]);
       setFormData({ ...formData, customer_id: (data as Customer).id });
@@ -141,7 +142,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
     });
     if (!res.ok) {
       const err = await res.json();
-      alert('Error: ' + (err.error || 'Failed to update'));
+      toast.error('Error: ' + (err.error || 'Failed to update'));
     } else {
       refreshJobs();
     }
@@ -150,7 +151,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
 
   const sendToAccountant = async (job: AdminJobCard) => {
     if (!banking) {
-      alert('No banking details configured. Please set up banking details first.');
+      toast.error('No banking details configured. Please set up banking details first.');
       return;
     }
     setLoading(true);
@@ -166,13 +167,13 @@ export default function AdminJobsClient({ initialJobs }: Props) {
         body: JSON.stringify({ jobIds: [job.id] }),
       });
       if (response.ok) {
-        alert(`Job ${job.job_number} sent to accountant via email.`);
+        toast.error(`Job ${job.job_number} sent to accountant via email.`);
       } else {
         const err = await response.json();
-        alert('Error: ' + err.error);
+        toast.error('Error: ' + err.error);
       }
     } catch (err) {
-      alert('Failed to send: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      toast.error('Failed to send: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
     setLoading(false);
   };

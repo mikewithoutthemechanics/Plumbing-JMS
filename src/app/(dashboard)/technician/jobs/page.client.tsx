@@ -6,6 +6,7 @@ import type { JobCard, JobMaterial, JobState } from '@/types';
 import MaterialSelector from '@/components/material-picker/MaterialSelector';
 import JobMaterialsList from '@/components/job-card/JobMaterialsList';
 import StateControls from '@/components/job-card/StateControls';
+import toast from 'react-hot-toast';
 
 interface Props {
   initialJobs: (JobCard & { customer?: { name: string }; job_materials?: JobMaterial[] })[];
@@ -43,7 +44,7 @@ export default function TechnicianJobsClient({ initialJobs, userId }: Props) {
     const { supabase } = await import('@/lib/supabase/client');
     if (!supabase) return;
     const { error } = await supabase.from('job_cards').update({ status: newStatus } as unknown as { [key: string]: unknown }).eq('id', jobId);
-    if (error) alert('Error: ' + error.message);
+    if (error) toast.error('Error: ' + error.message);
     else if (selectedJob?.id === jobId) {
       setSelectedJob({ ...selectedJob, status: newStatus });
     }
@@ -60,7 +61,7 @@ const addMaterial = async (jobId: string, materialId: string, quantity: number) 
     }
     const { data: material } = await supabase.from('materials').select('admin_unit_price').eq('id', materialId).single();
     if (!material) {
-      alert('Material not found');
+      toast.error('Material not found');
       setLoading(false);
       return;
     }
@@ -77,14 +78,14 @@ const addMaterial = async (jobId: string, materialId: string, quantity: number) 
       .insert(jobMaterialData as unknown as { [key: string]: unknown })
       .select()
       .single();
-    if (error) alert('Error: ' + error.message);
+    if (error) toast.error('Error: ' + error.message);
     else {
       const resultData = data as unknown as { line_total: number; id?: string };
       const { data: current } = await supabase.from('job_cards').select('materials_cost').eq('id', jobId).single();
       const currentData = current as unknown as { materials_cost?: number } | null;
       const newCost = (currentData?.materials_cost || 0) + resultData.line_total;
       const { error: updateError } = await supabase.from('job_cards').update({ materials_cost: newCost } as unknown as { [key: string]: unknown }).eq('id', jobId);
-      if (updateError) alert('Error updating material cost: ' + updateError.message);
+      if (updateError) toast.error('Error updating material cost: ' + updateError.message);
       if (selectedJob?.id === jobId) {
         const existingMaterials = selectedJob.job_materials || [];
         setSelectedJob({
@@ -111,7 +112,7 @@ const addMaterial = async (jobId: string, materialId: string, quantity: number) 
       admin_unit_price: 0,
       line_total: 0,
     } as unknown as { [key: string]: unknown });
-    if (error) alert('Error: ' + error.message);
+    if (error) toast.error('Error: ' + error.message);
     else refreshJobs();
     setLoading(false);
   };

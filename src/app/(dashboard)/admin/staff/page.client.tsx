@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface Staff {
   id: string;
@@ -42,7 +43,7 @@ export default function StaffClient({ initialStaff }: Props) {
     setShowModal(false);
     setFormData({ email: '', password: '', full_name: '', role: 'technician', phone: '' });
     setLoading(false);
-    alert('Staff member created (dev mode). In production this creates a real Supabase auth user.');
+    toast.error('Staff member created (dev mode). In production this creates a real Supabase auth user.');
   };
 
   const handleDelete = async (staffId: string) => {

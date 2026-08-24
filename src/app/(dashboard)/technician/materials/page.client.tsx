@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface MaterialSummary {
   id: string;
@@ -31,14 +32,14 @@ export default function TechnicianMaterialsClient({ activeJobs, materials }: { a
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedJobId) {
-      alert('Please select a job');
+      toast.error('Please select a job');
       return;
     }
 
     setLoading(true);
     const { supabase } = await import('@/lib/supabase/client');
     if (!supabase) {
-      alert('Supabase not configured');
+      toast.error('Supabase not configured');
       setLoading(false);
       return;
     }
@@ -50,7 +51,7 @@ export default function TechnicianMaterialsClient({ activeJobs, materials }: { a
         admin_unit_price: 0,
         line_total: 0,
       } as unknown as { [key: string]: unknown });
-      if (error) alert('Error: ' + error.message);
+      if (error) toast.error('Error: ' + error.message);
       else refreshRecent();
     } else if (customName) {
       const { error } = await supabase.from('job_materials').insert({
@@ -60,7 +61,7 @@ export default function TechnicianMaterialsClient({ activeJobs, materials }: { a
         admin_unit_price: 0,
         line_total: 0,
       } as unknown as { [key: string]: unknown });
-      if (error) alert('Error: ' + error.message);
+      if (error) toast.error('Error: ' + error.message);
       else {
         setCustomName('');
         refreshRecent();

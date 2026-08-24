@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Customer } from '@/types';
+import toast from 'react-hot-toast';
 
 interface Props {
   initialCustomers: Customer[];
@@ -35,7 +36,7 @@ export default function CustomersClient({ initialCustomers }: Props) {
       notes: formData.notes || null,
     };
     const { error } = await supabase.from('customers').insert(customerData as unknown as { [key: string]: unknown });
-    if (error) alert('Error: ' + error.message);
+    if (error) toast.error('Error: ' + error.message);
     else {
       setShowModal(false);
       setFormData({ name: '', email: '', phone: '', address: '', notes: '' });

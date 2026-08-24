@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { calculateHours, formatDateTime } from '@/lib/utils/calculations';
 import type { JobCard } from '@/types';
+import toast from 'react-hot-toast';
 
 interface Props {
   initialJobs: JobCard[];
@@ -39,7 +40,7 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
       is_paused: false,
     };
     const { error } = await supabase.from('time_logs').insert(logData as unknown as { [key: string]: unknown });
-    if (error) alert('Error: ' + error.message);
+    if (error) toast.error('Error: ' + error.message);
     else {
       setActiveJobId(jobId);
       refresh();
@@ -58,7 +59,7 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
       .single();
 
     if (!log) {
-      alert('No active clock-in found');
+      toast.error('No active clock-in found');
       return;
     }
 
@@ -69,7 +70,7 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
       .update({ clock_out: new Date().toISOString(), hours } as unknown as { [key: string]: unknown })
       .eq('id', logData.id);
 
-    if (error) alert('Error: ' + error.message);
+    if (error) toast.error('Error: ' + error.message);
     else {
       setActiveJobId(null);
       refresh();
