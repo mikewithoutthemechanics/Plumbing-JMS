@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: max 3 requests per 10 minutes per client IP.
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const { ok, retryAfterSec } = rateLimit(ip, 3, 10 * 60 * 1000);
+    if (!ok) {
+      return NextResponse.json(
+        { error: 'Too many requests. Try again later.' },
+        { status: 429, headers: { 'Retry-After': String(retryAfterSec) } }
+      );
+    }
+
     const body = await request.json();
     const { email } = body;
 
