@@ -1,10 +1,11 @@
-export const JOB_STATES = ['pending', 'assigned', 'completed', 'to_be_invoiced', 'invoiced'] as const;
+export const JOB_STATES = ['pending', 'assigned', 'in_progress', 'completed', 'to_be_invoiced', 'invoiced'] as const;
 
 export type JobState = typeof JOB_STATES[number];
 
 export const JOB_STATE_LABELS: Record<JobState, string> = {
   pending: 'Pending',
   assigned: 'Assigned',
+  in_progress: 'In Progress',
   completed: 'Completed',
   to_be_invoiced: 'To Be Invoiced',
   invoiced: 'Invoiced',
@@ -12,7 +13,8 @@ export const JOB_STATE_LABELS: Record<JobState, string> = {
 
 export const JOB_STATE_TRANSITIONS: Record<JobState, JobState[]> = {
   pending: ['assigned'],
-  assigned: ['completed'],
+  assigned: ['in_progress', 'completed'],
+  in_progress: ['completed'],
   completed: ['to_be_invoiced'],
   to_be_invoiced: ['invoiced'],
   invoiced: [],

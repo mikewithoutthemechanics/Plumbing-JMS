@@ -59,7 +59,7 @@ export interface JobCard {
   assigned_to_profile?: { full_name: string; email: string };
 }
 
-export type JobState = 'pending' | 'assigned' | 'completed' | 'to_be_invoiced' | 'invoiced';
+export type JobState = 'pending' | 'assigned' | 'in_progress' | 'completed' | 'to_be_invoiced' | 'invoiced';
 
 export interface JobMaterial {
   id: string;

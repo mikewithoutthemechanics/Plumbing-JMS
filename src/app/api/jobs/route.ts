@@ -149,7 +149,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ job }, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error('[Jobs API] Error:', error);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }
@@ -171,7 +172,7 @@ export async function PATCH(request: NextRequest) {
     if (!existingJob) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
 
     if (status && status !== existingJob.status) {
-      if (!canAdvanceState(profile.role, existingJob.status, status)) {
+      if (!canAdvanceState(profile.role, existingJob.status, status, existingJob.assigned_to === user.id)) {
         return NextResponse.json({ error: 'Invalid state transition' }, { status: 400 });
       }
 
@@ -287,7 +288,8 @@ export async function PATCH(request: NextRequest) {
     });
 
     return NextResponse.json({ job: updatedJob });
-  } catch {
+  } catch (error) {
+    console.error('[Jobs API] Error:', error);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }
