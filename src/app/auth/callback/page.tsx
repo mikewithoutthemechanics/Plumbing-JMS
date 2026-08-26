@@ -65,7 +65,7 @@ export default function CallbackPage() {
           const { data: sessionData } = await supabase.auth.getSession();
           if (sessionData.session) {
             console.log('Found existing session despite exchange error, going to dashboard');
-            if (active) router.replace('/dashboard');
+            if (active) router.replace('/');
             return;
           }
 
@@ -83,7 +83,7 @@ export default function CallbackPage() {
         const { data: { session: verifiedSession } } = await supabase.auth.getSession();
         if (verifiedSession) {
           console.log('Verified session exists, redirecting to dashboard');
-          if (active) router.replace('/dashboard');
+          if (active) router.replace('/');
         } else {
           console.error('Exchange succeeded but no session found afterwards');
           if (active) setStatus('Sign-in completed but session not found');

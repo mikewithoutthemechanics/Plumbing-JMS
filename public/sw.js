@@ -49,7 +49,7 @@ self.addEventListener('push', (event) => {
   try {
     const payload = event.data.json();
 
-    const options: NotificationOptions = {
+    const options = {
       body: payload.body,
       icon: payload.icon || '/icon-192.png',
       badge: payload.badge || '/badge-72.png',
@@ -80,7 +80,7 @@ self.addEventListener('notificationclick', (event) => {
   let targetUrl = '/';
 
   if (action && data.actions) {
-    const actionConfig = data.actions.find((a: { action: string; url?: string }) => a.action === action);
+    const actionConfig = data.actions.find((a) => a.action === action);
     if (actionConfig?.url) targetUrl = actionConfig.url;
   } else if (data.url) {
     targetUrl = data.url;
