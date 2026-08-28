@@ -32,7 +32,7 @@ test.describe('Authentication Buttons', () => {
   test('Login - Magic Link button navigates to magic link page', async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
     await page.fill('input[type="email"]', 'test@test.com');
-    await page.click('button:has-text("Send magic link")');
+    await page.click('button:has-text("Send magic link instead")');
     await expect(page).toHaveURL(/\/magic-link/);
   });
 
@@ -52,13 +52,13 @@ test.describe('Authentication Buttons', () => {
 
   test('Login - Toggle to Sign Up works', async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
-    await page.click('button:has-text("Sign up")');
+    await page.click('button:has-text("Don\'t have an account? Sign up")');
     await expect(page.locator('input[id="fullName"], input[name="fullName"]')).toBeVisible();
   });
 
   test('Magic Link - Back to Login link works', async ({ page }) => {
     await page.goto(`${BASE_URL}/magic-link`);
-    await page.click('a:has-text("Back to login")');
+    await page.click('a:has-text("Back to Login")');
     await expect(page).toHaveURL(/\/login/);
   });
 });
