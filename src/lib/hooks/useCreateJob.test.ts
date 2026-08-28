@@ -41,7 +41,11 @@ describe('useCreateJob hook', () => {
     await waitFor(() => expect(result.current.isPending).toBe(false));
 
     expect(result.current.data).toEqual({ id: '1', description: 'Fix leak', job_number: 'JOB-1' });
-    expect(mockedCreateJob).toHaveBeenNthCalledWith(1, expect.objectContaining({ description: 'Fix leak' }));
+    expect(mockedCreateJob).toHaveBeenNthCalledWith(1, expect.objectContaining({ description: 'Fix leak' }), expect.objectContaining({
+      client: expect.any(QueryClient),
+      meta: undefined,
+      mutationKey: undefined,
+    }));
   });
 
   it('handles creation error', async () => {

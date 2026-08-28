@@ -8,7 +8,12 @@ vi.mock('@/lib/supabase/server', () => ({
   getSupabaseAdminClient: vi.fn(),
 }));
 
+vi.mock('@/lib/utils/export', () => ({
+  generateExcelExport: vi.fn(),
+}));
+
 import { getSupabaseServerClient, getSupabaseAdminClient } from '@/lib/supabase/server';
+import { generateExcelExport } from '@/lib/utils/export';
 
 const mockGetSupabaseServerClient =
   getSupabaseServerClient as unknown as MockedFunction<typeof getSupabaseServerClient>;
@@ -36,6 +41,7 @@ describe('/api/export route', () => {
       in: vi.fn().mockReturnThis(),
       insert: vi.fn().mockReturnThis(),
     };
+    (builder as Record<string, unknown>).then = (resolve: (value: { data: unknown; error: unknown }) => void) => resolve(resolveData);
     mockSupabase = {
       auth: { getUser: vi.fn() },
       from: vi.fn(() => builder),
@@ -76,7 +82,8 @@ describe('/api/export route', () => {
     it('returns 500 on export failure', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } });
       singleMock.mockResolvedValueOnce({ data: { role: 'owner' }, error: null });
-      
+      resolveData = { data: null, error: { message: 'export fail' } };
+
       const res = await GET();
       expect(res.status).toBe(500);
       expect(await res.json()).toEqual({ error: 'Export failed' });
