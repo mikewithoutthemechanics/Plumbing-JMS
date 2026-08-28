@@ -184,7 +184,7 @@ describe('/api/invoices route', () => {
       singleMock.mockResolvedValueOnce({ data: null, error: null });
       const req = new NextRequest('http://localhost:3000/api/invoices', {
         method: 'PATCH',
-        body: JSON.stringify({ invoice_id: '1', amount: 50 }),
+        body: JSON.stringify({ invoice_id: '123e4567-e89b-12d3-a456-426614174000', amount: 50 }),
       });
       const res = await PATCH(req);
       expect(res.status).toBe(404);
@@ -199,7 +199,7 @@ describe('/api/invoices route', () => {
 
       const req = new NextRequest('http://localhost:3000/api/invoices', {
         method: 'PATCH',
-        body: JSON.stringify({ invoice_id: '1', amount: 50 }),
+        body: JSON.stringify({ invoice_id: '123e4567-e89b-12d3-a456-426614174000', amount: 50 }),
       });
       const res = await PATCH(req);
 
@@ -217,7 +217,7 @@ describe('/api/invoices route', () => {
 
       const req = new NextRequest('http://localhost:3000/api/invoices', {
         method: 'PATCH',
-        body: JSON.stringify({ invoice_id: '1', amount: 50 }),
+        body: JSON.stringify({ invoice_id: '123e4567-e89b-12d3-a456-426614174000', amount: 50 }),
       });
       const res = await PATCH(req);
 
