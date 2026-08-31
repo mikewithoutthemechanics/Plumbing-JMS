@@ -233,7 +233,7 @@ export async function PATCH(request: NextRequest) {
 
     if (error) {
       console.error('[Jobs API] Update failed:', error);
-      return NextResponse.json({ error: error.message || 'Failed to update job card' }, { status: 500 });
+      return NextResponse.json({ error: error.message || 'Failed to update job card', details: error }, { status: 500 });
     }
 
     if (status === 'invoiced' && existingJob.status !== 'invoiced') {

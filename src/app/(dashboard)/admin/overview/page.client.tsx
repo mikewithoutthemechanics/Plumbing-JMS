@@ -45,13 +45,13 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], counts: in
         Promise.all([
           supabase.from('job_cards').select('*', { count: 'exact', head: true }),
           supabase.from('job_cards').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('job_cards').select('*', { count: 'exact', head: true }).eq('status', 'to_be_invoiced'),
+          supabase.from('job_cards').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
           supabase.from('job_cards').select('*', { count: 'exact', head: true }).eq('status', 'invoiced'),
-        ]).then(([total, pending, toBeInvoiced, invoiced]) => {
+        ]).then(([total, pending, completed, invoiced]) => {
           setCounts({
             total: total.count ?? 0,
             pending: pending.count ?? 0,
-            toBeInvoiced: toBeInvoiced.count ?? 0,
+            toBeInvoiced: completed.count ?? 0,
             invoiced: invoiced.count ?? 0,
           });
         });

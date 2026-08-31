@@ -35,16 +35,10 @@ export default function DashboardLayout({
 }) {
   const [user, setUser] = useState<{ email: string; role?: string; name?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { supported, permission, subscribed, subscribe } = usePushNotifications();
-
-  useEffect(() => {
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(console.error);
-    }
-  }, []);
 
   useEffect(() => {
     // Auto-subscribe technicians to push notifications
@@ -194,6 +188,15 @@ export default function DashboardLayout({
                   );
                 })}
               </div>
+              <button
+                className="md:hidden p-2 rounded-lg hover:bg-white/70 transition-colors"
+                onClick={() => setMobileNavOpen(true)}
+                aria-label="Open navigation"
+              >
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
             </div>
             <div className="flex items-center gap-3">
               <div className="hidden items-center gap-2.5 sm:flex">
@@ -212,6 +215,39 @@ export default function DashboardLayout({
           </div>
         </nav>
       </header>
+
+      {/* Mobile drawer */}
+      {mobileNavOpen && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/40 md:hidden" onClick={() => setMobileNavOpen(false)} />
+          <div className="fixed right-0 top-0 z-50 h-full w-72 bg-white shadow-xl md:hidden">
+            <div className="flex h-16 items-center justify-between border-b px-4">
+              <span className="font-bold text-primary-700">Menu</span>
+              <button onClick={() => setMobileNavOpen(false)} className="p-2" aria-label="Close">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            </div>
+            <nav className="p-4 space-y-1">
+              {navItems.map((item) => {
+                const active = pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileNavOpen(false)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      active ? 'bg-primary-600 text-white' : 'text-secondary-600 hover:bg-secondary-100'
+                    }`}
+                  >
+                    <span>{item.icon}</span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </>
+      )}
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}

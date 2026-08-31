@@ -30,12 +30,12 @@ export default async function AdminReportsPage() {
   }
 
   const summary = jobs.reduce((acc, job) => {
-    const status = job.status as 'pending' | 'assigned' | 'completed' | 'to_be_invoiced' | 'invoiced';
+    const status = job.status as 'pending' | 'assigned' | 'in_progress' | 'completed' | 'to_be_invoiced' | 'invoiced';
     acc[status] = (acc[status] || 0) + 1;
     acc.total += job.grand_total;
     if (status === 'invoiced') acc.invoicedTotal += job.grand_total;
     return acc;
-  }, { total: 0, invoicedTotal: 0, pending: 0, assigned: 0, to_be_invoiced: 0, completed: 0, invoiced: 0 });
+  }, { total: 0, invoicedTotal: 0, pending: 0, assigned: 0, in_progress: 0, to_be_invoiced: 0, completed: 0, invoiced: 0 });
 
   return (
     <div className="space-y-6">

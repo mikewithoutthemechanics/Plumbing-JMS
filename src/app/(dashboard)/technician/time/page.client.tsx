@@ -12,7 +12,7 @@ interface Props {
 
 export default function TimeLogger({ initialJobs, userId }: Props) {
   const [jobs, setJobs] = useState(initialJobs);
-  const [logs, setLogs] = useState<{ job_id: string; clock_in: string; clock_out?: string; id?: string }[]>([]);
+  const [logs, setLogs] = useState<{ job_card_id: string; clock_in: string; clock_out?: string; id?: string }[]>([]);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
     if (data) setJobs(data);
   };
 
-  const activeLog = logs.find(l => l.job_id === activeJobId && !l.clock_out);
+  const activeLog = logs.find(l => !l.clock_out) ?? null;
 
   return (
     <div className="space-y-6">
@@ -104,21 +104,21 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
                 <div
                   key={job.id}
                   onClick={() => {
-                    if (activeLog?.job_id === job.id) {
+                    if (activeLog?.job_card_id === job.id) {
                       clockOut(job.id);
                     } else if (!activeLog) {
                       clockIn(job.id);
                     }
                   }}
                   className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    activeLog?.job_id === job.id
+                    activeLog?.job_card_id === job.id
                       ? 'border-red-500 bg-red-50'
                       : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50'
-                  } ${activeLog && activeLog?.job_id !== job.id ? 'opacity-50' : ''}`}
+                  } ${activeLog && activeLog?.job_card_id !== job.id ? 'opacity-50' : ''}`}
                 >
                   <div className="font-mono text-sm">{job.job_number}</div>
                   <div className="text-sm text-gray-600">{job.description}</div>
-                  {activeLog?.job_id === job.id && (
+                  {activeLog?.job_card_id === job.id && (
                     <div className="text-xs text-red-600 font-medium mt-1">
                       ● CLOCKED IN — Tap to clock out
                     </div>
@@ -132,10 +132,10 @@ export default function TimeLogger({ initialJobs, userId }: Props) {
           <h3 className="font-semibold text-gray-900 mb-4">Today&apos;s Time Logs</h3>
           <div className="space-y-2">
             {logs.slice(0, 10).map((log) => {
-              const job = jobs.find(j => j.id === log.job_id);
+              const job = jobs.find(j => j.id === log.job_card_id);
               const hours = log.clock_out ? calculateHours(log.clock_in, log.clock_out) : calculateHours(log.clock_in, new Date().toISOString());
               return (
-                <div key={log.job_id + log.clock_in} className="p-3 rounded-lg bg-gray-50">
+                <div key={log.job_card_id + log.clock_in} className="p-3 rounded-lg bg-gray-50">
                   <div className="font-mono text-sm">{job?.job_number || 'Unknown'}</div>
                   <div className="text-xs text-gray-500">
                     {formatDateTime(log.clock_in)} → {log.clock_out ? formatDateTime(log.clock_out) : 'Now'}
