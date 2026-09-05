@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
-import { POST } from './route';
+import { GET } from './route';
 
 vi.mock('@/lib/supabase/server', () => ({
   getSupabaseServerClient: vi.fn(),
@@ -15,7 +15,7 @@ const mockGetSupabaseServerClient =
 const mockGetSupabaseAdminClient =
   getSupabaseAdminClient as unknown as MockedFunction<typeof getSupabaseAdminClient>;
 
-describe('/api/sync route', () => {
+describe('/api/debtors route', () => {
   let singleMock: ReturnType<typeof vi.fn>;
   let resolveData: { data: unknown; error: unknown };
   let builder: Record<string, ReturnType<typeof vi.fn>>;
@@ -32,9 +32,9 @@ describe('/api/sync route', () => {
     b.select = vi.fn().mockReturnThis();
     b.eq = vi.fn().mockReturnThis();
     b.single = singleMock;
+    b.gt = vi.fn().mockReturnThis();
+    b.order = vi.fn().mockReturnThis();
     b.insert = vi.fn().mockReturnThis();
-    b.update = vi.fn().mockReturnThis();
-    b.delete = vi.fn().mockReturnThis();
     b.then = (resolve: (value: { data: unknown; error: unknown }) => void) => resolve(resolveData);
     builder = b;
     mockSupabase = {
@@ -47,75 +47,47 @@ describe('/api/sync route', () => {
 
   it('returns 401 when user is not authenticated', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
-
-    const req = new NextRequest('http://localhost:3000/api/sync', {
-      method: 'POST',
-      body: JSON.stringify({}),
-    });
-    const res = await POST(req);
-
+    const res = await GET();
     expect(res.status).toBe(401);
-    expect((await res.json()).error).toBe('Unauthorized');
+    expect(await res.json()).toEqual({ error: 'Unauthorized' });
   });
 
-  it('returns 403 when user role is not owner or technician', async () => {
+  it('returns 403 when user is neither owner nor accountant', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } });
-    singleMock.mockResolvedValueOnce({ data: { role: 'visitor' }, error: null });
-
-    const req = new NextRequest('http://localhost:3000/api/sync', {
-      method: 'POST',
-      body: JSON.stringify({}),
-    });
-    const res = await POST(req);
-
+    singleMock.mockResolvedValueOnce({ data: { role: 'technician' }, error: null });
+    const res = await GET();
     expect(res.status).toBe(403);
-    expect((await res.json()).error).toBe('Forbidden');
+    expect(await res.json()).toEqual({ error: 'Forbidden' });
   });
 
-  it('handles quote submission for owners', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } });
-    singleMock
-      .mockResolvedValueOnce({ data: { role: 'owner' }, error: null })
-      .mockResolvedValueOnce({
-        data: { id: 'quote-id', customer_name: 'John Doe' },
-        error: null,
-      });
-
-    const req = new NextRequest('http://localhost:3000/api/sync', {
-      method: 'POST',
-      body: JSON.stringify({
-        quote: {
-          customer_name: 'John Doe',
-          customer_email: 'john@example.com',
-          customer_phone: '1234567890',
-          description: 'Fix leaky faucet',
-        },
-      }),
-    });
-    const res = await POST(req);
-
-    expect(res.status).toBe(201);
-    expect((await res.json()).quote).toEqual({ id: 'quote-id', customer_name: 'John Doe' });
-  });
-
-  it('handles sync operation for valid data', async () => {
+  it('returns debtors list with total for owner', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } });
     singleMock.mockResolvedValueOnce({ data: { role: 'owner' }, error: null });
-    resolveData = { data: { success: true }, error: null };
+    resolveData = { data: [{ id: '1', name: 'Customer A', outstanding: 1000 }, { id: '2', name: 'Customer B', outstanding: 500 }], error: null };
 
-    const req = new NextRequest('http://localhost:3000/api/sync', {
-      method: 'POST',
-      headers: { 'x-forwarded-for': '127.0.0.1' },
-      body: JSON.stringify({
-        table_name: 'customers',
-        operation: 'INSERT',
-        payload: { name: 'Jane Doe', email: 'jane@example.com' },
-        id: 'sync-id',
-      }),
-    });
-    const res = await POST(req);
-
+    const res = await GET();
     expect(res.status).toBe(200);
-    expect((await res.json()).success).toBe(true);
+    const json = await res.json();
+    expect(json.debtors).toHaveLength(2);
+    expect(json.totalOutstanding).toBe(1500);
+  });
+
+  it('returns 500 on database error', async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } });
+    singleMock.mockResolvedValueOnce({ data: { role: 'owner' }, error: null });
+    resolveData = { data: null, error: { message: 'DB error' } };
+
+    const res = await GET();
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'DB error' });
+  });
+
+  it('allows accountant access', async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-id' } } });
+    singleMock.mockResolvedValueOnce({ data: { role: 'accountant' }, error: null });
+    resolveData = { data: [], error: null };
+
+    const res = await GET();
+    expect(res.status).toBe(200);
   });
 });
