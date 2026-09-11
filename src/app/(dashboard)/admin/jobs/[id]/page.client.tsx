@@ -60,7 +60,10 @@ export default function AdminJobDetailClient({ jobId }: { jobId: string }) {
       if (newStatus === 'to_be_invoiced') {
         const resInv = await fetch('/api/invoices', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token}`,
+          },
           body: JSON.stringify({ job_card_id: id }),
         });
         if (!resInv.ok) {
