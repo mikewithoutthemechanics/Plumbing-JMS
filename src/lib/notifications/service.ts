@@ -152,7 +152,7 @@ export async function processQuoteEnquiryNotifications(): Promise<ProcessResult>
         customerEmail: notif.customer_email || '',
         customerPhone: notif.customer_phone || '',
         description: notif.description || '',
-        quoteUrl: `${appUrl}/admin/quotes/${notif.quote_id}`,
+        quoteUrl: `${appUrl}/admin/quotes?quote=${notif.quote_id}`,
       });
 
       await supabase
