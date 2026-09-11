@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Quote } from '@/types';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -11,10 +11,19 @@ const STATUS_COLORS: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
 };
 
-export default function AdminQuotesClient({ initialQuotes }: { initialQuotes: Quote[] }) {
+export default function AdminQuotesClient({ initialQuotes, initialSelectedQuoteId }: { initialQuotes: Quote[]; initialSelectedQuoteId?: string }) {
   const [quotes, setQuotes] = useState(initialQuotes);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [price, setPrice] = useState('');
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+  // Deep link from quote-enquiry email: ?quote=<id> scrolls to and highlights the card.
+  useEffect(() => {
+    if (!initialSelectedQuoteId) return;
+    if (!quotes.some((q) => q.id === initialSelectedQuoteId)) return;
+    setHighlightedId(initialSelectedQuoteId);
+    document.getElementById(`quote-${initialSelectedQuoteId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [initialSelectedQuoteId, quotes]);
 
   const updateQuote = async (id: string, status: Quote['status'], estimated_price?: number) => {
     const { error } = await fetch('/api/quotes', {
@@ -37,7 +46,7 @@ export default function AdminQuotesClient({ initialQuotes }: { initialQuotes: Qu
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {quotes.map((quote) => (
-          <div key={quote.id} className="card p-4">
+          <div key={quote.id} id={`quote-${quote.id}`} className={`card p-4 ${highlightedId === quote.id ? 'ring-2 ring-blue-500' : ''}`}>
             <div className="flex justify-between items-start mb-2">
               <h3 className="font-semibold text-gray-900">{quote.customer_name}</h3>
               <span className={`text-xs px-2 py-1 rounded ${STATUS_COLORS[quote.status]}`}>
