@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
 import type { JobCard, JobMaterial, JobState } from '@/types';
 import MaterialSelector from '@/components/material-picker/MaterialSelector';
@@ -11,13 +11,26 @@ import toast from 'react-hot-toast';
 interface Props {
   initialJobs: (JobCard & { customer?: { name: string }; job_materials?: JobMaterial[] })[];
   userId: string;
+  initialSelectedJobId?: string;
 }
 
-export default function TechnicianJobsClient({ initialJobs, userId }: Props) {
+export default function TechnicianJobsClient({ initialJobs, userId, initialSelectedJobId }: Props) {
   const [jobs, setJobs] = useState(initialJobs);
   const [selectedJob, setSelectedJob] = useState<(JobCard & { customer?: { name: string }; job_materials?: JobMaterial[] }) | null>(null);
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [loading, setLoading] = useState(false);
+
+  // Deep link from job-assigned email/push: ?job=<id> opens the job detail directly.
+  // Unknown ids (or jobs not assigned to this user) fall through to the list.
+  useEffect(() => {
+    if (!initialSelectedJobId) return;
+    const found = jobs.find((j) => j.id === initialSelectedJobId);
+    if (found && selectedJob?.id !== found.id) {
+      setSelectedJob(found);
+      setView('detail');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSelectedJobId, jobs]);
 
   const refreshJobs = async () => {
     const { supabase } = await import('@/lib/supabase/client');
