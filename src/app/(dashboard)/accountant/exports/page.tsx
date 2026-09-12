@@ -9,7 +9,7 @@ const MOCK_INVOICED = [
 
 export default async function AccountantExportsPage() {
   const cookieStore = await cookies();
-  const devMode = cookieStore.get('dev_admin')?.value === '1';
+  const devMode = process.env.NODE_ENV !== 'production' && cookieStore.get('dev_admin')?.value === '1';
 
   let jobs;
   if (devMode) {

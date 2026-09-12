@@ -7,7 +7,7 @@ export const fetchCache = 'force-no-store';
 
 export default async function CustomersPage() {
   const cookieStore = await cookies();
-  const devMode = cookieStore.get('dev_admin')?.value === '1';
+  const devMode = process.env.NODE_ENV !== 'production' && cookieStore.get('dev_admin')?.value === '1';
 
   if (devMode) {
     return <CustomersClient initialCustomers={getMockCustomers()} />;

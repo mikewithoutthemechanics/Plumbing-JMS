@@ -70,7 +70,7 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     const demoModeEnv = process.env.NEXT_PUBLIC_DEMO_MODE;
-    const devMode = request.cookies.get('dev_admin')?.value === '1' || demoModeEnv === 'true' || demoModeEnv === '1' || demoModeEnv === 'TRUE';
+    const devMode = process.env.NODE_ENV !== 'production' && (request.cookies.get('dev_admin')?.value === '1' || demoModeEnv === 'true' || demoModeEnv === '1' || demoModeEnv === 'TRUE');
 
     const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
 
@@ -133,6 +133,10 @@ export async function middleware(request: NextRequest) {
   } catch (err) {
     if (process.env.NODE_ENV !== "production") {
       logger.error("[Middleware] Error:", { error: err });
+    }
+    const pathname = request.nextUrl.pathname;
+    if (pathname.startsWith("/admin") || pathname.startsWith("/technician") || pathname.startsWith("/accountant")) {
+      return NextResponse.redirect(new URL("/login", request.url));
     }
     return NextResponse.next();
   }

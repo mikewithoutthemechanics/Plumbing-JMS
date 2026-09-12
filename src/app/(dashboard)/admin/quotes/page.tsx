@@ -7,7 +7,7 @@ export const fetchCache = 'force-no-store';
 export default async function AdminQuotesPage({ searchParams }: { searchParams: Promise<{ quote?: string }> }) {
   const { quote: selectedQuoteId } = await searchParams;
   const cookieStore = await cookies();
-  const devMode = cookieStore.get('dev_admin')?.value === '1';
+  const devMode = process.env.NODE_ENV !== 'production' && cookieStore.get('dev_admin')?.value === '1';
 
   if (devMode) {
     const MOCK_QUOTES = [

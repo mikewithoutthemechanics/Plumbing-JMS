@@ -8,7 +8,7 @@ export const fetchCache = 'force-no-store';
 export default async function TechnicianJobsPage({ searchParams }: { searchParams: Promise<{ job?: string }> }) {
   const { job: selectedJobId } = await searchParams;
   const cookieStore = await cookies();
-  const devMode = cookieStore.get('dev_admin')?.value === '1';
+  const devMode = process.env.NODE_ENV !== 'production' && cookieStore.get('dev_admin')?.value === '1';
 
   if (devMode) {
     return <TechnicianJobsClient initialJobs={getMockJobs()} userId="dev-admin-001" initialSelectedJobId={selectedJobId} />;

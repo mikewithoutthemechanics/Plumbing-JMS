@@ -15,15 +15,14 @@ export default function AdminQuotesClient({ initialQuotes, initialSelectedQuoteI
   const [quotes, setQuotes] = useState(initialQuotes);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [price, setPrice] = useState('');
-  const [highlightedId, setHighlightedId] = useState<string | null>(null);
-
   // Deep link from quote-enquiry email: ?quote=<id> scrolls to and highlights the card.
+  const [highlightedId] = useState<string | null>(() =>
+    initialSelectedQuoteId && initialQuotes.some((q) => q.id === initialSelectedQuoteId) ? initialSelectedQuoteId : null
+  );
   useEffect(() => {
-    if (!initialSelectedQuoteId) return;
-    if (!quotes.some((q) => q.id === initialSelectedQuoteId)) return;
-    setHighlightedId(initialSelectedQuoteId);
-    document.getElementById(`quote-${initialSelectedQuoteId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [initialSelectedQuoteId, quotes]);
+    if (!highlightedId) return;
+    document.getElementById(`quote-${highlightedId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [highlightedId]);
 
   const updateQuote = async (id: string, status: Quote['status'], estimated_price?: number) => {
     const { error } = await fetch('/api/quotes', {

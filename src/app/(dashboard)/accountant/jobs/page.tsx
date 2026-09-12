@@ -8,7 +8,7 @@ import AccountantJobsClient from './page.client';
 
 export default async function AccountantJobsPage() {
   const cookieStore = await cookies();
-  const devMode = cookieStore.get('dev_admin')?.value === '1';
+  const devMode = process.env.NODE_ENV !== 'production' && cookieStore.get('dev_admin')?.value === '1';
 
   if (devMode) {
     return <AccountantJobsClient initialJobs={getMockJobs()} />;

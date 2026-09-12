@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkApiRateLimit } from '@/lib/rate-limiter';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { processJobAssignedNotifications, processQuoteEnquiryNotifications } from '@/lib/notifications/service';
 
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -12,7 +13,7 @@ function verifyCronAuth(req: Request): boolean {
 
 export async function GET(req: Request) {
   if (!verifyCronAuth(req)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const [jobResult, quoteResult] = await Promise.all([
@@ -36,6 +37,18 @@ export async function POST(req: Request) {
   const ratelimit = await checkApiRateLimit(ip);
   if (!ratelimit.allowed) {
     return NextResponse.json({ error: 'rate limited' }, { status: 429 });
+  }
+
+  if (!verifyCronAuth(req)) {
+    const supabase = await getSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (!profile || profile.role !== 'owner') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
   }
 
   const [jobResult, quoteResult] = await Promise.all([

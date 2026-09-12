@@ -1,6 +1,7 @@
 import type { JobCard, Customer, Material, AuditLog } from '@/types';
 
 export function isDevMode(request: Request): boolean {
+  if (process.env.NODE_ENV === 'production') return false;
   const cookieHeader = request.headers.get('cookie') || '';
   return cookieHeader.includes('dev_admin=1');
 }

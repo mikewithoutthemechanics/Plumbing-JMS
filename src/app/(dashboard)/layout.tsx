@@ -13,11 +13,13 @@ interface DevAuth {
 }
 
 function isDevMode(): boolean {
+  if (process.env.NODE_ENV === 'production') return false;
   if (typeof window === 'undefined') return false;
   return localStorage.getItem(LOCAL_STORAGE_KEYS.DEV_AUTH) !== null;
 }
 
 function getDevAuth(): DevAuth | null {
+  if (process.env.NODE_ENV === 'production') return null;
   if (typeof window === 'undefined') return null;
   const stored = localStorage.getItem(LOCAL_STORAGE_KEYS.DEV_AUTH);
   if (!stored) return null;
@@ -49,7 +51,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     const initAuth = async () => {
-      const devAuth = getDevAuth();
+      const devAuth = process.env.NODE_ENV !== 'production' ? getDevAuth() : null;
       if (devAuth) {
         setUser({
           email: devAuth.user.email,
