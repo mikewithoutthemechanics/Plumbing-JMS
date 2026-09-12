@@ -51,7 +51,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     const initAuth = async () => {
-      const devAuth = process.env.NODE_ENV !== 'production' ? getDevAuth() : null;
+      const devAuth = getDevAuth();
       if (devAuth) {
         setUser({
           email: devAuth.user.email,

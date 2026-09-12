@@ -36,6 +36,14 @@ function requireSupabaseAnonEnv(): { url: string; key: string } {
   return { url: url as string, key: key as string };
 }
 
+/**
+ * User-scoped server client (anon key + request cookies).
+ *
+ * Contract: every query through this client is subject to RLS as the
+ * logged-in user. Service-level work that must bypass RLS (audit writes,
+ * notification fan-out) belongs on {@link getSupabaseAdminClient}.
+ * Changing this key changes the security posture of ALL API routes.
+ */
 export async function getSupabaseServerClient() {
   const cookieStore = await cookies();
   const { url: supabaseUrl, key: anonKey } = requireSupabaseAnonEnv();

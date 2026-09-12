@@ -131,9 +131,9 @@ export async function middleware(request: NextRequest) {
       }
     }
   } catch (err) {
-    if (process.env.NODE_ENV !== "production") {
-      logger.error("[Middleware] Error:", { error: err });
-    }
+    // Always log: a silent redirect here turns outages into mystery logouts.
+    // Vercel runtime logs capture console.error in production.
+    console.error("[Middleware] Error:", err);
     const pathname = request.nextUrl.pathname;
     if (pathname.startsWith("/admin") || pathname.startsWith("/technician") || pathname.startsWith("/accountant")) {
       return NextResponse.redirect(new URL("/login", request.url));

@@ -178,7 +178,9 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
     const { job_id, status, description, admin_notes } = body;
-    let { admin_hourly_rate, assigned_to } = body;
+    // Reassigned below during normalisation, hence `let`.
+    let assigned_to: unknown = body.assigned_to;
+    let admin_hourly_rate: unknown = body.admin_hourly_rate;
     if (!job_id) return NextResponse.json({ error: 'Missing job_id' }, { status: 400 });
 
     // Normalise form junk that Postgres rejects: "" is not a UUID or numeric.
