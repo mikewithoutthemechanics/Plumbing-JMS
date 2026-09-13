@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/utils/audit';
 import { validateJobInput } from '@/lib/validation';
 import { canAdvanceState, canAccessJob, canSeePricing } from '@/lib/utils/permissions';
+import { calculateJobTotals } from '@/lib/utils/calculations';
 import { processJobAssignedNotifications } from '@/lib/notifications/service';
 
 export async function GET(request: NextRequest) {
@@ -234,6 +235,38 @@ export async function PATCH(request: NextRequest) {
     if (error) {
       console.error('[Jobs API] Update failed:', error);
       return NextResponse.json({ error: error.message || 'Failed to update job card', details: error }, { status: 500 });
+    }
+
+    // Recalculate job totals from materials + time logs whenever state advances
+    if (status && status !== existingJob.status) {
+      const { data: jobMaterials } = await supabase
+        .from('job_materials')
+        .select('admin_unit_price, quantity')
+        .eq('job_card_id', job_id);
+
+      const { data: timeLogs } = await supabase
+        .from('time_logs')
+        .select('hours')
+        .eq('job_card_id', job_id);
+
+      const materials = (jobMaterials || []).map(m => ({
+        unitPrice: m.admin_unit_price || 0,
+        quantity: m.quantity || 0,
+      }));
+      const totalHours = (timeLogs || []).reduce((sum, t) => sum + (t.hours || 0), 0);
+      const hourlyRate = updatedJob.admin_hourly_rate || existingJob.admin_hourly_rate || 0;
+      const totals = calculateJobTotals(hourlyRate, totalHours, materials);
+
+      await supabase
+        .from('job_cards')
+        .update({
+          labour_cost: totals.labour,
+          materials_cost: totals.materialsCost,
+          subtotal: totals.subtotal,
+          vat_amount: totals.vat,
+          grand_total: totals.grandTotal,
+        })
+        .eq('id', job_id);
     }
 
     if (status === 'invoiced' && existingJob.status !== 'invoiced') {

@@ -1,13 +1,12 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
+import { isServerDevMode } from '@/lib/utils/dev-mock-data';
 import type { JobCard, AuditLog, Material } from '@/types';
 import AdminOverviewClient from './page.client';
 
 export const fetchCache = 'force-no-store';
 
 export default async function AdminOverviewPage() {
-  const cookieStore = await cookies();
-  const devMode = cookieStore.get('dev_admin')?.value === '1';
+  const devMode = await isServerDevMode();
 
   if (devMode) {
     return (

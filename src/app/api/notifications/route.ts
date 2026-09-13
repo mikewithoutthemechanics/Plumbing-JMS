@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { checkApiRateLimit } from '@/lib/rate-limiter';
 import { processJobAssignedNotifications, processQuoteEnquiryNotifications } from '@/lib/notifications/service';
 
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -31,11 +30,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const forwardedFor = req.headers.get('x-forwarded-for');
-  const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
-  const ratelimit = await checkApiRateLimit(ip);
-  if (!ratelimit.allowed) {
-    return NextResponse.json({ error: 'rate limited' }, { status: 429 });
+  // Require cron auth for POST as well (prevents unauthenticated notification triggering)
+  if (!verifyCronAuth(req)) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
   const [jobResult, quoteResult] = await Promise.all([

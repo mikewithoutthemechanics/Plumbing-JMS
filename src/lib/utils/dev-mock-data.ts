@@ -1,8 +1,16 @@
+import { cookies } from 'next/headers';
 import type { JobCard, Customer, Material, AuditLog } from '@/types';
 
 export function isDevMode(request: Request): boolean {
   const cookieHeader = request.headers.get('cookie') || '';
   return cookieHeader.includes('dev_admin=1');
+}
+
+/** Server-side check: dev_admin cookie is only honored in non-production. */
+export async function isServerDevMode(): Promise<boolean> {
+  if (process.env.NODE_ENV === 'production') return false;
+  const cookieStore = await cookies();
+  return cookieStore.get('dev_admin')?.value === '1';
 }
 
 export function getMockJobs(): JobCard[] {

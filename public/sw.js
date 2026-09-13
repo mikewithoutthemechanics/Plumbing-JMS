@@ -3,14 +3,27 @@
 
 const CACHE_NAME = 'plumbing-jms-v1';
 const STATIC_ASSETS = [
-  '/',
   '/login',
   '/manifest.json',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // Cache each asset individually, following redirects
+      for (const url of STATIC_ASSETS) {
+        try {
+          const response = await fetch(url, { redirect: 'follow' });
+          if (response.ok) {
+            await cache.put(url, response);
+          } else {
+            console.warn(`[SW] Skipping cache of ${url}: ${response.status}`);
+          }
+        } catch (error) {
+          console.error(`[SW] Failed to fetch and cache ${url}:`, error);
+        }
+      }
+    })
   );
   self.skipWaiting();
 });
@@ -26,19 +39,42 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+const SKIP_PATHS = [
+  '/auth/callback',
+  '/magic-link',
+  '/api/',
+];
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  const url = new URL(event.request.url);
+  // Skip service worker for auth/redirect paths and API routes
+  if (SKIP_PATHS.some(p => url.pathname.startsWith(p))) return;
+
+  // Only cache GET requests for our static assets
+  const isStaticAsset = STATIC_ASSETS.includes(url.pathname);
+  
+  // Only intercept static assets we want to cache; let others pass through
+  if (!isStaticAsset) return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request).then((response) => {
+    caches.match(event.request).then(async (cached) => {
+      if (cached) {
+        return cached;
+      }
+
+      try {
+        const response = await fetch(event.request, { redirect: 'follow' });
         if (response.ok && event.request.url.startsWith(self.location.origin)) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          await caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      }).catch(() => cached);
-      return cached || fetchPromise;
+      } catch (error) {
+        console.error('[SW] Fetch error:', error);
+        return cached || new Response('Network error', { status: 504 });
+      }
     })
   );
 });

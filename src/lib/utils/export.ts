@@ -37,7 +37,7 @@ export async function generateExcelExport(
     ['Branch Code:', bankingDetails.branchCode],
     ['Reference:', `${bankingDetails.referencePrefix} + Job Number`],
     [],
-    ['Grand Total:', `=SUM(L2:L${jobs.length + 1})`],
+    ['Grand Total:', `=SUM(M2:M${jobs.length + 1})`],
   ];
   summaryData.forEach(row => bankingSheet.addRow(row));
 
