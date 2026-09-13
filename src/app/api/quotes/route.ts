@@ -34,8 +34,9 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { quote_id, status } = body;
-    if (!quote_id || !status) {
+    const { quote_id, id, status } = body;
+    const quoteId = quote_id || id;
+    if (!quoteId || !status) {
       return NextResponse.json({ error: 'Missing quote_id or status' }, { status: 400 });
     }
 
@@ -44,7 +45,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
-    const { data: quote } = await supabase.from('quotes').select('*').eq('id', quote_id).single();
+    const { data: quote } = await supabase.from('quotes').select('*').eq('id', quoteId).single();
     if (!quote) return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
 
     const updateData: Record<string, unknown> = { status };
@@ -83,7 +84,7 @@ export async function PUT(request: NextRequest) {
         updateData.customer_id = customerId;
       }
 
-      const jobNumber = `JOB-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      const jobNumber = `JOB-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
       // Auto-assign to least-busy technician
       let assignedTo: string | null = null;
@@ -127,14 +128,14 @@ export async function PUT(request: NextRequest) {
     const { data: updated, error: updErr } = await supabase
       .from('quotes')
       .update(updateData)
-      .eq('id', quote_id)
+      .eq('id', quoteId)
       .select()
       .single();
     if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
 
     await logAudit({
       tableName: 'quotes',
-      recordId: quote_id,
+      recordId: quoteId,
       action: 'UPDATE',
       oldValues: { status: quote.status },
       newValues: updateData,

@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         customer_id: job.customer_id,
         invoice_number: invoiceNumber(),
         amount_due: amountDue,
-        vat_amount: job.vat_amount,
+        vat_amount: totals.vat,
         amount_paid: 0,
         status: 'unpaid',
         due_date: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),

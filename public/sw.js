@@ -3,6 +3,7 @@
 
 const CACHE_NAME = 'plumbing-jms-v1';
 const STATIC_ASSETS = [
+  '/',
   '/login',
   '/manifest.json',
 ];

@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
         email,
         create_user: true,
       }),
-      redirect: 'follow',
     }).then(res => res.json());
 
     if (error) {

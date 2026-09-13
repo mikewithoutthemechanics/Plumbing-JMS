@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validationErrors.join(', ') }, { status: 400 });
     }
 
-    const jobNumber = `JOB-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+    const jobNumber = `JOB-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
     let finalAssignedTo = assigned_to;
     if (!finalAssignedTo) {
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         const { data: activeJobCounts } = await supabase
           .from('job_cards')
           .select('assigned_to')
-          .in('status', ['assigned', 'completed', 'to_be_invoiced']);
+          .in('status', ['assigned', 'in_progress']);
 
         const counts: Record<string, number> = {};
         (activeJobCounts || []).forEach(j => { if (j.assigned_to) counts[j.assigned_to] = (counts[j.assigned_to] || 0) + 1; });
@@ -172,50 +172,41 @@ export async function PATCH(request: NextRequest) {
     const { data: existingJob } = await supabase.from('job_cards').select('*').eq('id', job_id).single();
     if (!existingJob) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
 
+    // Validate state transition
     if (status && status !== existingJob.status) {
       if (!canAdvanceState(profile.role, existingJob.status, status, existingJob.assigned_to === user.id)) {
         return NextResponse.json({ error: 'Invalid state transition' }, { status: 400 });
       }
 
-      // C1 guard: block transition to 'invoiced' when any job material
-      // exceeds stock on hand. Prevents invoicing materials that do not exist.
+      // Block transition to 'invoiced' when any job material exceeds stock on hand
       if (status === 'invoiced' && existingJob.status !== 'invoiced') {
-        const { data: jobMaterials } = await supabase
+        const { data: stockCheck } = await supabase
           .from('job_materials')
           .select('material_id, quantity')
           .eq('job_card_id', job_id);
 
-        if (jobMaterials && jobMaterials.length > 0) {
+        if (stockCheck && stockCheck.length > 0) {
           const shortfalls: { material_id: string; required: number; on_hand: number }[] = [];
-          for (const jm of jobMaterials) {
+          for (const jm of stockCheck) {
             if (!jm.material_id) continue;
-            const { data: material } = await supabase
+            const { data: mat } = await supabase
               .from('materials')
               .select('name, quantity_on_hand')
               .eq('id', jm.material_id)
               .single();
-            const onHand = material?.quantity_on_hand ?? 0;
+            const onHand = mat?.quantity_on_hand ?? 0;
             if (onHand < jm.quantity) {
-              shortfalls.push({
-                material_id: jm.material_id,
-                required: jm.quantity,
-                on_hand: onHand,
-              });
+              shortfalls.push({ material_id: jm.material_id, required: jm.quantity, on_hand: onHand });
             }
           }
           if (shortfalls.length > 0) {
-            return NextResponse.json(
-              {
-                error: 'Cannot invoice: insufficient stock for one or more materials.',
-                shortfalls,
-              },
-              { status: 409 }
-            );
+            return NextResponse.json({ error: 'Cannot invoice: insufficient stock.', shortfalls }, { status: 409 });
           }
         }
       }
     }
 
+    // Build update payload — recalculate totals when state is changing
     const updates: Record<string, unknown> = {};
     if (status) updates.status = status;
     if (description !== undefined) updates.description = description;
@@ -224,6 +215,27 @@ export async function PATCH(request: NextRequest) {
     if (assigned_to !== undefined) updates.assigned_to = assigned_to;
     if (status === 'completed' && existingJob.status !== 'completed') updates.completed_at = new Date().toISOString();
     if (status === 'invoiced' && existingJob.status !== 'invoiced') updates.invoiced_at = new Date().toISOString();
+
+    if (status && status !== existingJob.status) {
+      const { data: jmRows } = await supabase
+        .from('job_materials')
+        .select('admin_unit_price, quantity')
+        .eq('job_card_id', job_id);
+      const { data: tlRows } = await supabase
+        .from('time_logs')
+        .select('hours')
+        .eq('job_card_id', job_id);
+
+      const materials = (jmRows || []).map(m => ({ unitPrice: m.admin_unit_price || 0, quantity: m.quantity || 0 }));
+      const totalHours = (tlRows || []).reduce((sum, t) => sum + (t.hours || 0), 0);
+      const totals = calculateJobTotals(existingJob.admin_hourly_rate || 0, totalHours, materials);
+
+      updates.labour_cost = totals.labour;
+      updates.materials_cost = totals.materialsCost;
+      updates.subtotal = totals.subtotal;
+      updates.vat_amount = totals.vat;
+      updates.grand_total = totals.grandTotal;
+    }
 
     const { data: updatedJob, error } = await supabase
       .from('job_cards')
@@ -237,38 +249,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: error.message || 'Failed to update job card', details: error }, { status: 500 });
     }
 
-    // Recalculate job totals from materials + time logs whenever state advances
-    if (status && status !== existingJob.status) {
-      const { data: jobMaterials } = await supabase
-        .from('job_materials')
-        .select('admin_unit_price, quantity')
-        .eq('job_card_id', job_id);
-
-      const { data: timeLogs } = await supabase
-        .from('time_logs')
-        .select('hours')
-        .eq('job_card_id', job_id);
-
-      const materials = (jobMaterials || []).map(m => ({
-        unitPrice: m.admin_unit_price || 0,
-        quantity: m.quantity || 0,
-      }));
-      const totalHours = (timeLogs || []).reduce((sum, t) => sum + (t.hours || 0), 0);
-      const hourlyRate = updatedJob.admin_hourly_rate || existingJob.admin_hourly_rate || 0;
-      const totals = calculateJobTotals(hourlyRate, totalHours, materials);
-
-      await supabase
-        .from('job_cards')
-        .update({
-          labour_cost: totals.labour,
-          materials_cost: totals.materialsCost,
-          subtotal: totals.subtotal,
-          vat_amount: totals.vat,
-          grand_total: totals.grandTotal,
-        })
-        .eq('id', job_id);
-    }
-
+    // Deduct materials from inventory when invoicing
     if (status === 'invoiced' && existingJob.status !== 'invoiced') {
       const { data: jobMaterials } = await supabase
         .from('job_materials')
@@ -277,30 +258,29 @@ export async function PATCH(request: NextRequest) {
 
       if (jobMaterials && jobMaterials.length > 0) {
         for (const jm of jobMaterials) {
-          if (jm.material_id) {
-            const { data: material } = await supabase
+          if (!jm.material_id) continue;
+          const { data: material } = await supabase
+            .from('materials')
+            .select('quantity_on_hand')
+            .eq('id', jm.material_id)
+            .single();
+
+          if (material) {
+            const newQty = Math.max(0, (material.quantity_on_hand || 0) - jm.quantity);
+            await supabase
               .from('materials')
-              .select('quantity_on_hand')
-              .eq('id', jm.material_id)
-              .single();
+              .update({ quantity_on_hand: newQty })
+              .eq('id', jm.material_id);
 
-            if (material) {
-              const newQty = Math.max(0, (material.quantity_on_hand || 0) - jm.quantity);
-              await supabase
-                .from('materials')
-                .update({ quantity_on_hand: newQty })
-                .eq('id', jm.material_id);
-
-              if (newQty <= 5) {
-                await logAudit({
-                  tableName: 'materials',
-                  recordId: jm.material_id,
-                  action: 'UPDATE',
-                  oldValues: { quantity_on_hand: material.quantity_on_hand },
-                  newValues: { quantity_on_hand: newQty, alert: newQty === 0 ? 'OUT_OF_STOCK' : 'LOW_STOCK' },
-                  changedBy: user.id,
-                });
-              }
+            if (newQty <= 5) {
+              await logAudit({
+                tableName: 'materials',
+                recordId: jm.material_id,
+                action: 'UPDATE',
+                oldValues: { quantity_on_hand: material.quantity_on_hand },
+                newValues: { quantity_on_hand: newQty, alert: newQty === 0 ? 'OUT_OF_STOCK' : 'LOW_STOCK' },
+                changedBy: user.id,
+              });
             }
           }
         }
