@@ -113,7 +113,7 @@ export interface Payment {
   invoice_id: string;
   customer_id: string;
   amount: number;
-  method: 'cash' | 'card' | 'eft' | 'other';
+  method: 'cash' | 'card' | 'bank_transfer' | 'check' | 'eft' | 'other';
   recorded_by?: string;
   note?: string;
   created_at: string;

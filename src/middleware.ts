@@ -70,7 +70,8 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     const demoModeEnv = process.env.NEXT_PUBLIC_DEMO_MODE;
-    const devMode = request.cookies.get('dev_admin')?.value === '1' || demoModeEnv === 'true' || demoModeEnv === '1' || demoModeEnv === 'TRUE';
+    const isDevEnv = process.env.NODE_ENV !== 'production';
+    const devMode = (isDevEnv && request.cookies.get('dev_admin')?.value === '1') || (isDevEnv && (demoModeEnv === 'true' || demoModeEnv === '1' || demoModeEnv === 'TRUE'));
 
     const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
 
@@ -134,7 +135,10 @@ export async function middleware(request: NextRequest) {
     if (process.env.NODE_ENV !== "production") {
       logger.error("[Middleware] Error:", { error: err });
     }
-    return NextResponse.next();
+    const isApi = request.nextUrl.pathname.startsWith("/api/");
+    return isApi
+      ? NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+      : NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/utils/audit';
 import { validateInvoiceInput, validatePaymentInput } from '@/lib/validation';
+import { calculateJobTotals } from '@/lib/utils/calculations';
 
 function invoiceNumber(): string {
   const d = new Date();
@@ -62,7 +63,25 @@ export async function POST(request: NextRequest) {
     const { data: existing } = await supabase.from('invoices').select('id').eq('job_card_id', job_card_id).maybeSingle();
     if (existing) return NextResponse.json({ error: 'Invoice already exists for this job' }, { status: 400 });
 
-    const amountDue = job.grand_total || (job.subtotal + job.vat_amount);
+    // Recalculate totals from job materials + time logs (don't rely on stale grand_total)
+    const { data: jobMaterials } = await supabase
+      .from('job_materials')
+      .select('admin_unit_price, quantity')
+      .eq('job_card_id', job_card_id);
+    const { data: timeLogs } = await supabase
+      .from('time_logs')
+      .select('hours')
+      .eq('job_card_id', job_card_id);
+
+    const materials = (jobMaterials || []).map(m => ({
+      unitPrice: m.admin_unit_price || 0,
+      quantity: m.quantity || 0,
+    }));
+    const totalHours = (timeLogs || []).reduce((sum, t) => sum + (t.hours || 0), 0);
+    const hourlyRate = job.admin_hourly_rate || 0;
+    const totals = calculateJobTotals(hourlyRate, totalHours, materials);
+
+    const amountDue = totals.grandTotal;
     const { data: invoice, error } = await supabase
       .from('invoices')
       .insert({
@@ -70,7 +89,7 @@ export async function POST(request: NextRequest) {
         customer_id: job.customer_id,
         invoice_number: invoiceNumber(),
         amount_due: amountDue,
-        vat_amount: job.vat_amount,
+        vat_amount: totals.vat,
         amount_paid: 0,
         status: 'unpaid',
         due_date: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),

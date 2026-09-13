@@ -1,6 +1,5 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
-import { getMockJobs, getMockMaterials } from '@/lib/utils/dev-mock-data';
+import { getMockJobs, getMockMaterials, isServerDevMode } from '@/lib/utils/dev-mock-data';
 import TechnicianMaterialsClient from './page.client';
 
 export const fetchCache = 'force-no-store';
@@ -12,8 +11,7 @@ interface MaterialSummary {
 }
 
 export default async function TechnicianMaterialsPage() {
-  const cookieStore = await cookies();
-  const devMode = cookieStore.get('dev_admin')?.value === '1';
+  const devMode = await isServerDevMode();
 
   if (devMode) {
     return (

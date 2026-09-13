@@ -1,13 +1,11 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
-import { getMockCustomers } from '@/lib/utils/dev-mock-data';
+import { getMockCustomers, isServerDevMode } from '@/lib/utils/dev-mock-data';
 import CustomersClient from './page.client';
 
 export const fetchCache = 'force-no-store';
 
 export default async function CustomersPage() {
-  const cookieStore = await cookies();
-  const devMode = cookieStore.get('dev_admin')?.value === '1';
+  const devMode = await isServerDevMode();
 
   if (devMode) {
     return <CustomersClient initialCustomers={getMockCustomers()} />;

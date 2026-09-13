@@ -1,5 +1,5 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
+import { isServerDevMode } from '@/lib/utils/dev-mock-data';
 
 const MOCK_JOBS = [
   { status: 'pending', grand_total: 0 },
@@ -12,8 +12,7 @@ const MOCK_JOBS = [
 export const fetchCache = 'force-no-store';
 
 export default async function AdminReportsPage() {
-  const cookieStore = await cookies();
-  const devMode = cookieStore.get('dev_admin')?.value === '1';
+  const devMode = await isServerDevMode();
 
   let jobs;
   if (devMode) {

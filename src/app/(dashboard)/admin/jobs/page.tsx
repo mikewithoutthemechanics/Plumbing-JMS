@@ -1,14 +1,12 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
-import { getMockJobs } from '@/lib/utils/dev-mock-data';
+import { getMockJobs, isServerDevMode } from '@/lib/utils/dev-mock-data';
 import type { JobCard } from '@/types';
 import AdminJobsClient from './page.client';
 
 export const fetchCache = 'force-no-store';
 
 export default async function AdminJobsPage() {
-  const cookieStore = await cookies();
-  const devMode = cookieStore.get('dev_admin')?.value === '1';
+  const devMode = await isServerDevMode();
 
   if (devMode) {
     return <AdminJobsClient initialJobs={getMockJobs()} />;

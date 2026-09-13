@@ -54,12 +54,23 @@ export default function TechnicianJobsClient({ initialJobs, userId, initialSelec
 
   const advanceState = async (jobId: string, newStatus: JobState) => {
     setLoading(true);
-    const { supabase } = await import('@/lib/supabase/client');
-    if (!supabase) return;
-    const { error } = await supabase.from('job_cards').update({ status: newStatus } as unknown as { [key: string]: unknown }).eq('id', jobId);
-    if (error) toast.error('Error: ' + error.message);
-    else if (selectedJob?.id === jobId) {
-      setSelectedJob({ ...selectedJob, status: newStatus });
+    try {
+      const res = await fetch('/api/jobs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId, status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to update job');
+      } else {
+        if (selectedJob?.id === jobId) {
+          setSelectedJob({ ...selectedJob, status: newStatus, ...data.job });
+        }
+        toast.success(`Job moved to ${newStatus.replace(/_/g, ' ')}`);
+      }
+    } catch {
+      toast.error('Network error updating job');
     }
     refreshJobs();
     setLoading(false);

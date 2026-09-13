@@ -18,7 +18,7 @@ export const invoiceInputSchema = z.object({
 export const paymentInputSchema = z.object({
   invoice_id: z.string().uuid('Invalid invoice ID'),
   amount: z.number().positive('Payment amount must be positive').max(1000000, 'Payment amount too large'),
-  method: z.enum(['cash', 'card', 'bank_transfer', 'check', 'other']).default('cash'),
+  method: z.enum(['cash', 'card', 'bank_transfer', 'check', 'eft', 'other']).default('cash'),
   note: z.string().max(500, 'Note too long').optional(),
 });
 
