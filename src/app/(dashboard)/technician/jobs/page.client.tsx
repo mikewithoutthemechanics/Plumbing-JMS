@@ -26,7 +26,7 @@ export default function TechnicianJobsClient({ initialJobs, userId, initialSelec
     if (!initialSelectedJobId) return;
     const found = jobs.find((j) => j.id === initialSelectedJobId);
     if (found && selectedJob?.id !== found.id) {
-      setSelectedJob(found);
+      setSelectedJob(found); // eslint-disable-line react-hooks/set-state-in-effect
       setView('detail');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

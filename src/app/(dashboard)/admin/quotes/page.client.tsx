@@ -21,7 +21,7 @@ export default function AdminQuotesClient({ initialQuotes, initialSelectedQuoteI
   useEffect(() => {
     if (!initialSelectedQuoteId) return;
     if (!quotes.some((q) => q.id === initialSelectedQuoteId)) return;
-    setHighlightedId(initialSelectedQuoteId);
+    setHighlightedId(initialSelectedQuoteId); // eslint-disable-line react-hooks/set-state-in-effect
     document.getElementById(`quote-${initialSelectedQuoteId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [initialSelectedQuoteId, quotes]);
 
