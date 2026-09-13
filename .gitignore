@@ -51,3 +51,4 @@ storybook-static
 npm-pid.txt
 playwright-report/
 test.css
+test-results/
