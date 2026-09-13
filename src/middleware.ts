@@ -135,7 +135,10 @@ export async function middleware(request: NextRequest) {
     if (process.env.NODE_ENV !== "production") {
       logger.error("[Middleware] Error:", { error: err });
     }
-    return NextResponse.redirect(new URL("/login", request.url));
+    const isApi = request.nextUrl.pathname.startsWith("/api/");
+    return isApi
+      ? NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+      : NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();

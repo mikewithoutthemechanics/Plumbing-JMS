@@ -186,15 +186,17 @@ export async function PATCH(request: NextRequest) {
           .eq('job_card_id', job_id);
 
         if (stockCheck && stockCheck.length > 0) {
+          const materialIds = stockCheck.filter(jm => jm.material_id).map(jm => jm.material_id!);
+          const { data: materials } = await supabase
+            .from('materials')
+            .select('id, quantity_on_hand')
+            .in('id', materialIds);
+          const stockMap = new Map((materials || []).map(m => [m.id, m.quantity_on_hand ?? 0]));
+
           const shortfalls: { material_id: string; required: number; on_hand: number }[] = [];
           for (const jm of stockCheck) {
             if (!jm.material_id) continue;
-            const { data: mat } = await supabase
-              .from('materials')
-              .select('name, quantity_on_hand')
-              .eq('id', jm.material_id)
-              .single();
-            const onHand = mat?.quantity_on_hand ?? 0;
+            const onHand = stockMap.get(jm.material_id) ?? 0;
             if (onHand < jm.quantity) {
               shortfalls.push({ material_id: jm.material_id, required: jm.quantity, on_hand: onHand });
             }
@@ -228,7 +230,8 @@ export async function PATCH(request: NextRequest) {
 
       const materials = (jmRows || []).map(m => ({ unitPrice: m.admin_unit_price || 0, quantity: m.quantity || 0 }));
       const totalHours = (tlRows || []).reduce((sum, t) => sum + (t.hours || 0), 0);
-      const totals = calculateJobTotals(existingJob.admin_hourly_rate || 0, totalHours, materials);
+      const rate = updates.admin_hourly_rate as number | undefined;
+      const totals = calculateJobTotals(rate ?? (existingJob.admin_hourly_rate || 0), totalHours, materials);
 
       updates.labour_cost = totals.labour;
       updates.materials_cost = totals.materialsCost;
@@ -249,7 +252,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: error.message || 'Failed to update job card', details: error }, { status: 500 });
     }
 
-    // Deduct materials from inventory when invoicing
+    // Deduct materials from inventory when invoicing (atomic decrement)
     if (status === 'invoiced' && existingJob.status !== 'invoiced') {
       const { data: jobMaterials } = await supabase
         .from('job_materials')
@@ -257,19 +260,23 @@ export async function PATCH(request: NextRequest) {
         .eq('job_card_id', job_id);
 
       if (jobMaterials && jobMaterials.length > 0) {
-        for (const jm of jobMaterials) {
-          if (!jm.material_id) continue;
-          const { data: material } = await supabase
+        const materialIds = jobMaterials.filter(jm => jm.material_id).map(jm => jm.material_id!);
+        if (materialIds.length > 0) {
+          // Fetch current stock for audit logging
+          const { data: currentStock } = await supabase
             .from('materials')
-            .select('quantity_on_hand')
-            .eq('id', jm.material_id)
-            .single();
+            .select('id, quantity_on_hand')
+            .in('id', materialIds);
+          const stockBefore = new Map((currentStock || []).map(m => [m.id, m.quantity_on_hand ?? 0]));
 
-          if (material) {
-            const newQty = Math.max(0, (material.quantity_on_hand || 0) - jm.quantity);
+          // Atomic decrement: read current stock, compute new qty, write back
+          for (const jm of jobMaterials) {
+            if (!jm.material_id) continue;
+            const prev = stockBefore.get(jm.material_id) ?? 0;
+            const newQty = Math.max(0, prev - jm.quantity);
             await supabase
               .from('materials')
-              .update({ quantity_on_hand: newQty })
+              .update({ quantity_on_hand: newQty } as Record<string, unknown>)
               .eq('id', jm.material_id);
 
             if (newQty <= 5) {
@@ -277,7 +284,7 @@ export async function PATCH(request: NextRequest) {
                 tableName: 'materials',
                 recordId: jm.material_id,
                 action: 'UPDATE',
-                oldValues: { quantity_on_hand: material.quantity_on_hand },
+                oldValues: { quantity_on_hand: prev },
                 newValues: { quantity_on_hand: newQty, alert: newQty === 0 ? 'OUT_OF_STOCK' : 'LOW_STOCK' },
                 changedBy: user.id,
               });

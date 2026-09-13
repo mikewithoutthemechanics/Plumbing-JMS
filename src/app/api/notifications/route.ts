@@ -4,8 +4,8 @@ import { processJobAssignedNotifications, processQuoteEnquiryNotifications } fro
 const CRON_SECRET = process.env.CRON_SECRET;
 
 function verifyCronAuth(req: Request): boolean {
-  // Allow unauthenticated calls when CRON_SECRET is not set (local dev)
-  if (!CRON_SECRET) return true;
+  // Allow unauthenticated calls in dev when CRON_SECRET is not set
+  if (!CRON_SECRET) return process.env.NODE_ENV !== 'production';
   const auth = req.headers.get('authorization');
   return auth === `Bearer ${CRON_SECRET}`;
 }
