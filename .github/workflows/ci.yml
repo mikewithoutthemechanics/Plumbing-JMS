@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -45,10 +45,10 @@ jobs:
         #   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         #   RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
 
-  # Dependency security audit (runs on push to master and weekly)
+  # Dependency security audit (runs on push to main and weekly)
   audit:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,10 +66,10 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
         continue-on-error: true  # Don't fail the workflow for vulnerabilities
 
-  # Lighthouse CI for performance budgets (optional, runs on push to master)
+  # Lighthouse CI for performance budgets (optional, runs on push to main)
   lighthouse-ci:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
