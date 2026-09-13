@@ -36,7 +36,7 @@ test('API /api/export requires auth (401)', async ({ request }) => {
   expect(res.status()).toBe(401);
 });
 
-test('Profile setup page loads', async ({ page }) => {
+test('Profile setup requires login (redirects when logged out)', async ({ page }) => {
   await page.goto(`${BASE}/profile-setup`);
-  await expect(page.locator('input[name="fullName"], input[name="full_name"]')).toBeVisible();
+  await expect(page).toHaveURL(/\/login/);
 });
