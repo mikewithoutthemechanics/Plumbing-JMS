@@ -4,11 +4,12 @@ import TechnicianJobsClient from './page.client';
 
 export const fetchCache = 'force-no-store';
 
-export default async function TechnicianJobsPage() {
+export default async function TechnicianJobsPage({ searchParams }: { searchParams: Promise<{ job?: string }> }) {
+  const { job: selectedJobId } = await searchParams;
   const devMode = await isServerDevMode();
 
   if (devMode) {
-    return <TechnicianJobsClient initialJobs={getMockJobs()} userId="dev-admin-001" />;
+    return <TechnicianJobsClient initialJobs={getMockJobs()} userId="dev-admin-001" initialSelectedJobId={selectedJobId} />;
   }
 
   const supabase = await getSupabaseServerClient();
@@ -28,5 +29,5 @@ export default async function TechnicianJobsPage() {
     .eq('assigned_to', user.id)
     .order('created_at', { ascending: false });
 
-  return <TechnicianJobsClient initialJobs={jobs || []} userId={user.id} />;
+  return <TechnicianJobsClient initialJobs={jobs || []} userId={user.id} initialSelectedJobId={selectedJobId} />;
 }

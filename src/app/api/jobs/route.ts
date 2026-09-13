@@ -157,8 +157,20 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const supabase = await getSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>;
+  try {
+    supabase = await getSupabaseServerClient();
+  } catch (e) {
+    console.error('[Jobs API] Supabase env missing:', e);
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
+
+  // Frontend sends Authorization: Bearer <token> — honour it, fall back to cookies.
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+  const { data: { user } } = token
+    ? await supabase.auth.getUser(token)
+    : await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', user.id).single();
@@ -166,8 +178,17 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { job_id, status, description, admin_hourly_rate, admin_notes, assigned_to } = body;
+    let { job_id, status, description, admin_hourly_rate, admin_notes, assigned_to } = body;
     if (!job_id) return NextResponse.json({ error: 'Missing job_id' }, { status: 400 });
+
+    // Normalise form junk that Postgres rejects: "" is not a UUID or numeric.
+    if (assigned_to === '') assigned_to = null;
+    if (admin_hourly_rate === '') admin_hourly_rate = undefined;
+    if (typeof admin_hourly_rate === 'string' && admin_hourly_rate !== undefined) {
+      const n = Number(admin_hourly_rate);
+      if (Number.isNaN(n)) return NextResponse.json({ error: 'admin_hourly_rate must be a number' }, { status: 400 });
+      admin_hourly_rate = n;
+    }
 
     const { data: existingJob } = await supabase.from('job_cards').select('*').eq('id', job_id).single();
     if (!existingJob) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
@@ -240,6 +261,10 @@ export async function PATCH(request: NextRequest) {
       updates.grand_total = totals.grandTotal;
     }
 
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No changes supplied' }, { status: 400 });
+    }
+
     const { data: updatedJob, error } = await supabase
       .from('job_cards')
       .update(updates)
@@ -248,7 +273,13 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('[Jobs API] Update failed:', error);
+      console.error('[Jobs API] Update failed:', JSON.stringify({
+        job_id,
+        updates,
+        code: (error as { code?: string }).code,
+        message: error.message,
+        hint: (error as { hint?: string }).hint,
+      }));
       return NextResponse.json({ error: error.message || 'Failed to update job card', details: error }, { status: 500 });
     }
 

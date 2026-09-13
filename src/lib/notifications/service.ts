@@ -62,7 +62,7 @@ export async function processJobAssignedNotifications(): Promise<ProcessResult> 
         technicianName: tech.full_name || 'Technician',
         customerName: notif.customer_name,
         jobNumber: notif.job_number,
-        jobUrl: `${appUrl}/technician/jobs/${notif.job_card_id}`,
+        jobUrl: `${appUrl}/technician/jobs?job=${notif.job_card_id}`,
       });
 
       // Send push notification
@@ -84,7 +84,7 @@ export async function processJobAssignedNotifications(): Promise<ProcessResult> 
               icon: '/icon-192.png',
               badge: '/badge-72.png',
               data: {
-                url: `${appUrl}/technician/jobs/${notif.job_card_id}`,
+                url: `${appUrl}/technician/jobs?job=${notif.job_card_id}`,
                 tag: `job-${notif.job_card_id}`,
               },
               requireInteraction: true,
@@ -152,7 +152,7 @@ export async function processQuoteEnquiryNotifications(): Promise<ProcessResult>
         customerEmail: notif.customer_email || '',
         customerPhone: notif.customer_phone || '',
         description: notif.description || '',
-        quoteUrl: `${appUrl}/admin/quotes/${notif.quote_id}`,
+        quoteUrl: `${appUrl}/admin/quotes?quote=${notif.quote_id}`,
       });
 
       await supabase
