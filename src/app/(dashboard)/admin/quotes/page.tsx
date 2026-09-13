@@ -26,7 +26,7 @@ export default async function AdminQuotesPage({ searchParams }: { searchParams: 
 
   const { data: quotes } = await supabase
     .from('quotes')
-    .select('*, customers(name)')
+    .select('*')
     .order('created_at', { ascending: false });
 
   return <AdminQuotesClient initialQuotes={quotes || []} initialSelectedQuoteId={selectedQuoteId} />;
