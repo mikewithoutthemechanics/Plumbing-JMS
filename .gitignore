@@ -52,3 +52,8 @@ npm-pid.txt
 playwright-report/
 test.css
 test-results/
+
+# secrets / local tokens (never commit)
+.e2e-token
+npm-install.err
+*.err
