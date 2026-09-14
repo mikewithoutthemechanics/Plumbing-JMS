@@ -376,7 +376,9 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const supabase = await getSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+  const { data: { user } } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
@@ -388,7 +390,18 @@ export async function DELETE(request: NextRequest) {
 
   const { data: existingJob } = await supabase.from('job_cards').select('*').eq('id', jobId).single();
   if (!existingJob) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
-  if (existingJob.status !== 'pending') return NextResponse.json({ error: 'Can only delete pending jobs' }, { status: 400 });
+  // Owner can delete any job; linked invoices/payments will block via FK unless force=true
+  const urlForce = new URL(request.url).searchParams.get('force') === 'true';
+  if (!urlForce && existingJob.status === 'invoiced') {
+    // Check for linked invoice - require explicit force
+    const { data: inv } = await supabase.from('invoices').select('id').eq('job_card_id', jobId).maybeSingle();
+    if (inv) return NextResponse.json({ error: 'Job has invoice. Use force=true to delete anyway (will delete invoice too).' }, { status: 400 });
+  }
+
+  // If force, delete linked invoices first (owner intent)
+  if (urlForce) {
+    await supabase.from('invoices').delete().eq('job_card_id', jobId);
+  }
 
   const { error } = await supabase.from('job_cards').delete().eq('id', jobId);
   if (error) return NextResponse.json({ error: 'Failed to delete job card' }, { status: 500 });

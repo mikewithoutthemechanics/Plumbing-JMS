@@ -181,3 +181,24 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const supabase = await getSupabaseServerClient();
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+  const { data: { user } } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const { searchParams } = new URL(request.url);
+  const invoiceId = searchParams.get('id');
+  if (!invoiceId) return NextResponse.json({ error: 'Missing invoice id' }, { status: 400 });
+  const { data: existing } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
+  if (!existing) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+  // Delete payments first (FK), then invoice
+  await supabase.from('payments').delete().eq('invoice_id', invoiceId);
+  const { error } = await supabase.from('invoices').delete().eq('id', invoiceId);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logAudit({ tableName: 'invoices', recordId: invoiceId, action: 'DELETE', oldValues: existing, changedBy: user.id });
+  return NextResponse.json({ success: true });
+}

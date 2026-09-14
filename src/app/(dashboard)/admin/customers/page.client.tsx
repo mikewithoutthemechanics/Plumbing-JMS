@@ -52,6 +52,22 @@ export default function CustomersClient({ initialCustomers }: Props) {
     if (data) setCustomers(data);
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Delete customer "${name}"? This cannot be undone. Jobs linked to this customer will block deletion.`)) return;
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
+    const { error } = await supabase.from('customers').delete().eq('id', id);
+    if (error) {
+      const msg = error.message.includes('violates foreign key') || error.message.includes('restricted')
+        ? 'Cannot delete: customer has linked jobs. Delete or reassign those jobs first.'
+        : error.message;
+      toast.error(msg);
+    } else {
+      toast.success('Customer deleted');
+      setCustomers(prev => prev.filter(c => c.id !== id));
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -62,8 +78,15 @@ export default function CustomersClient({ initialCustomers }: Props) {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {customers.map((customer) => (
-          <div key={customer.id} className="card p-4">
-            <h3 className="font-semibold text-gray-900">{customer.name}</h3>
+          <div key={customer.id} className="card p-4 group relative">
+            <button
+              onClick={() => handleDelete(customer.id, customer.name)}
+              className="absolute top-2 right-2 opacity-60 group-hover:opacity-100 text-red-600 hover:text-red-800 hover:bg-red-50 p-1.5 rounded-lg text-xs font-medium"
+              title="Delete customer (owner only)"
+            >
+              Delete
+            </button>
+            <h3 className="font-semibold text-gray-900 pr-12">{customer.name}</h3>
             {customer.email && <p className="text-sm text-gray-600">{customer.email}</p>}
             {customer.phone && <p className="text-sm text-gray-600">{customer.phone}</p>}
             <p className="text-sm text-gray-500 mt-2">{customer.address}</p>

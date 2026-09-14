@@ -192,6 +192,30 @@ export default function AdminJobsClient({ initialJobs }: Props) {
     setLoading(false);
   };
 
+  const handleDelete = async (job: AdminJobCard) => {
+    if (!confirm(`Delete job "${job.job_number} - ${job.description.slice(0, 30)}"? This will also delete its materials/time logs. ${job.status === 'invoiced' ? 'It has an invoice - it will be deleted too.' : ''}`)) return;
+    setLoading(true);
+    try {
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+      // Use API so audit is logged; force=true allows deleting invoiced jobs with invoices
+      const qs = job.status === 'invoiced' ? `?id=${job.id}&force=true` : `?id=${job.id}`;
+      const res = await fetch(`/api/jobs${qs}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) toast.error(data.error || 'Failed to delete');
+      else {
+        toast.success('Job deleted');
+        setJobs(prev => prev.filter(j => j.id !== job.id));
+      }
+    } catch {
+      toast.error('Network error');
+    }
+    setLoading(false);
+  };
+
   const filteredJobs = filterStatus === 'all' ? jobs : jobs.filter(j => j.status === filterStatus);
 
   return (
@@ -254,7 +278,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
                 <p className="text-gray-400 text-xs mt-2">{formatDateTime(job.created_at)}</p>
               </div>
 
-              <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+              <div className="flex flex-wrap gap-2 items-center" onClick={(e) => e.stopPropagation()}>
                 {job.status !== 'invoiced' && (
                   <StateControls job={job as JobCard & { status: JobState }} onAdvance={advanceState} loading={loading} />
                 )}
@@ -267,6 +291,14 @@ export default function AdminJobsClient({ initialJobs }: Props) {
                     Send to Accountant
                   </button>
                 )}
+                <button
+                  onClick={() => handleDelete(job)}
+                  disabled={loading}
+                  className="text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded text-xs font-medium"
+                  title="Delete job (owner only)"
+                >
+                  Delete
+                </button>
               </div>
             </div>
           </div>

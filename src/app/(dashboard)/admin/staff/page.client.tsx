@@ -47,8 +47,25 @@ export default function StaffClient({ initialStaff }: Props) {
   };
 
   const handleDelete = async (staffId: string) => {
-    if (!confirm('Are you sure you want to remove this staff member?')) return;
-    setStaff(staff.filter(s => s.id !== staffId));
+    if (!confirm('Are you sure you want to remove this staff member? This will delete their login and cannot be undone.')) return;
+    setLoading(true);
+    try {
+      const { supabase } = await import('@/lib/supabase/client');
+      const session = supabase ? (await supabase.auth.getSession()).data.session : null;
+      const res = await fetch(`/api/staff?id=${encodeURIComponent(staffId)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) toast.error(data.error || 'Failed to delete staff');
+      else {
+        toast.success('Staff deleted');
+        setStaff(prev => prev.filter(s => s.id !== staffId));
+      }
+    } catch {
+      toast.error('Network error');
+    }
+    setLoading(false);
   };
 
   return (

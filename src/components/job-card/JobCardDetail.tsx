@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
 import type { JobCard, JobMaterialRow, JobTender, JobSignature } from '@/types';
@@ -33,6 +34,7 @@ export default function JobCardDetail({
   onAdvance,
   loading,
 }: Props) {
+  const router = useRouter();
   const [signatoryName, setSignatoryName] = useState('');
 
   const toggleFlag = async (material: JobMaterialRow, field: 'bought' | 'claimed') => {
@@ -90,6 +92,21 @@ export default function JobCardDetail({
     setSavingRate(false);
   };
 
+  const handleDeleteJob = async () => {
+    if (!confirm(`Delete job ${job.job_number}? This will delete its materials, time logs and invoices. Cannot be undone.`)) return;
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    const qs = job.status === 'invoiced' ? `?id=${job.id}&force=true` : `?id=${job.id}`;
+    const res = await fetch(`/api/jobs${qs}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session?.access_token ?? ''}` } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) toast.error(data.error || 'Failed to delete');
+    else {
+      toast.success('Job deleted');
+      router.push('/admin/jobs');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -97,6 +114,11 @@ export default function JobCardDetail({
         <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
           {JOB_STATE_LABELS[job.status]}
         </span>
+        {canManage && (
+          <button onClick={handleDeleteJob} className="ml-auto text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-medium border border-red-200">
+            Delete Job
+          </button>
+        )}
       </div>
 
       <div className="card p-4">

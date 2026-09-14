@@ -117,10 +117,25 @@ export default function JobFinancePanel({ jobId }: { jobId: string }) {
     w.print();
   };
 
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    if (!confirm('Delete this invoice? This cannot be undone.')) return;
+    const { supabase } = await import('@/lib/supabase/client');
+    const session = supabase ? (await supabase.auth.getSession()).data.session : null;
+    const res = await fetch(`/api/invoices?id=${encodeURIComponent(invoiceId)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) alert(data.error || 'Failed to delete');
+    else {
+      setInvoices(prev => prev.filter(i => i.id !== invoiceId));
+    }
+  };
+
   return (
     <div className="card p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-gray-900">Finance / Invoices</h2>
+        <h2 className="font-semibold text-gray-900">Finance / Invoices (owner only)</h2>
         <div className="flex gap-2">
           <button onClick={exportXlsx} className="btn btn-secondary text-xs">Export XLSX</button>
           <button onClick={exportPdf} className="btn btn-secondary text-xs">Export PDF</button>
@@ -137,7 +152,7 @@ export default function JobFinancePanel({ jobId }: { jobId: string }) {
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-gray-100">
-                <tr><th className="p-2 text-left">Invoice #</th><th className="p-2 text-left">Status</th><th className="p-2 text-right">Due</th><th className="p-2 text-right">VAT</th><th className="p-2 text-right">Paid</th></tr>
+                <tr><th className="p-2 text-left">Invoice #</th><th className="p-2 text-left">Status</th><th className="p-2 text-right">Due</th><th className="p-2 text-right">VAT</th><th className="p-2 text-right">Paid</th><th className="p-2"></th></tr>
               </thead>
               <tbody>
                 {invoices.map(inv => (
@@ -147,9 +162,10 @@ export default function JobFinancePanel({ jobId }: { jobId: string }) {
                     <td className="p-2 text-right">{Number(inv.amount_due).toFixed(2)}</td>
                     <td className="p-2 text-right">{Number(inv.vat_amount).toFixed(2)}</td>
                     <td className="p-2 text-right">{Number(inv.amount_paid).toFixed(2)}</td>
+                    <td className="p-2 text-right"><button onClick={() => handleDeleteInvoice(inv.id)} className="text-red-600 hover:text-red-800 text-xs">Delete</button></td>
                   </tr>
                 ))}
-                {invoices.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-500">No invoices yet</td></tr>}
+                {invoices.length === 0 && <tr><td colSpan={6} className="p-4 text-center text-gray-500">No invoices yet</td></tr>}
               </tbody>
             </table>
           </div>

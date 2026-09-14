@@ -74,6 +74,18 @@ export default function MaterialsClient({ initialMaterials }: Props) {
     if (data) setMaterials(data as Material[]);
   };
 
+  const handleDelete = async (m: Material) => {
+    if (!confirm(`Delete material "${m.name}"? Linked job materials will keep quantity but lose link. This cannot be undone.`)) return;
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
+    const { error } = await supabase.from('materials').delete().eq('id', m.id);
+    if (error) toast.error(error.message.includes('violates') ? 'Cannot delete: still in use by jobs' : error.message);
+    else {
+      toast.success('Material deleted');
+      setMaterials(prev => prev.filter(x => x.id !== m.id));
+    }
+  };
+
   const filteredMaterials = categoryFilter === 'all'
     ? materials
     : materials.filter(m => m.category === categoryFilter);
@@ -139,6 +151,7 @@ export default function MaterialsClient({ initialMaterials }: Props) {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price (ZAR)</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty on Hand</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -185,6 +198,9 @@ export default function MaterialsClient({ initialMaterials }: Props) {
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${material.quantity_on_hand > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {material.quantity_on_hand > 0 ? 'In Stock' : 'Out of Stock'}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <button onClick={() => handleDelete(material)} className="text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded text-xs font-medium">Delete</button>
                 </td>
               </tr>
             ))}
