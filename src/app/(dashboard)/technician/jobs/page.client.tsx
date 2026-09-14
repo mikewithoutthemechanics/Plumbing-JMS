@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
-import type { JobCard, JobMaterial, JobState } from '@/types';
+import type { JobCard, JobMaterial, JobState, Customer } from '@/types';
 import MaterialSelector from '@/components/material-picker/MaterialSelector';
 import JobMaterialsList from '@/components/job-card/JobMaterialsList';
 import StateControls from '@/components/job-card/StateControls';
@@ -19,9 +19,13 @@ export default function TechnicianJobsClient({ initialJobs, userId, initialSelec
   const [selectedJob, setSelectedJob] = useState<(JobCard & { customer?: { name: string }; job_materials?: JobMaterial[] }) | null>(null);
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [loading, setLoading] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [formData, setFormData] = useState({ customer_id: '', description: '', technician_notes: '' });
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [clientForm, setClientForm] = useState({ name: '', email: '', phone: '', address: '', notes: '' });
+  const [clientLoading, setClientLoading] = useState(false);
 
-  // Deep link from job-assigned email/push: ?job=<id> opens the job detail directly.
-  // Unknown ids (or jobs not assigned to this user) fall through to the list.
   useEffect(() => {
     if (!initialSelectedJobId) return;
     const found = jobs.find((j) => j.id === initialSelectedJobId);
@@ -29,12 +33,22 @@ export default function TechnicianJobsClient({ initialJobs, userId, initialSelec
       setSelectedJob(found);
       setView('detail');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSelectedJobId, jobs]);
+  }, [initialSelectedJobId, jobs, selectedJob?.id]);
+
+  useEffect(() => {
+    const initCustomers = async () => {
+      const { supabase } = await import('@/lib/supabase/client');
+      if (!supabase) return;
+      const { data } = await supabase.from('customers').select('id, name, address').order('name');
+      if (data) setCustomers(data as Customer[]);
+    };
+    initCustomers();
+  }, []);
 
   const refreshJobs = async () => {
     const { supabase } = await import('@/lib/supabase/client');
     if (!supabase) return;
+    // Tech sees jobs assigned to them OR created by them (pending they created before owner assigns)
     const { data } = await supabase
       .from('job_cards')
       .select(`
@@ -42,9 +56,9 @@ export default function TechnicianJobsClient({ initialJobs, userId, initialSelec
         customer:customers(name),
         job_materials(*)
       `)
-      .eq('assigned_to', userId)
+      .or(`assigned_to.eq.${userId},created_by.eq.${userId}`)
       .order('created_at', { ascending: false });
-    if (data) setJobs(data);
+    if (data) setJobs(data as any);
   };
 
   const selectJob = (job: JobCard & { customer?: { name: string }; job_materials?: JobMaterial[] }) => {
@@ -52,70 +66,97 @@ export default function TechnicianJobsClient({ initialJobs, userId, initialSelec
     setView('detail');
   };
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { supabase } = await import('@/lib/supabase/client');
+      if (!supabase) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+        body: JSON.stringify({
+          customer_id: formData.customer_id,
+          description: formData.description,
+          technician_notes: formData.technician_notes,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) toast.error(data.error || 'Failed to create job');
+      else {
+        toast.success('Job created - owner will add pricing');
+        setShowCreateModal(false);
+        setFormData({ customer_id: '', description: '', technician_notes: '' });
+        refreshJobs();
+      }
+    } catch {
+      toast.error('Network error');
+    }
+    setLoading(false);
+  };
+
+  const handleCreateClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setClientLoading(true);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) { setClientLoading(false); return; }
+    const { data, error } = await supabase.from('customers').insert({
+      name: clientForm.name,
+      email: clientForm.email || null,
+      phone: clientForm.phone || null,
+      address: clientForm.address,
+      notes: clientForm.notes || null,
+    } as any).select().single();
+    if (error) toast.error(error.message);
+    else {
+      setCustomers([...customers, data as Customer]);
+      setFormData({ ...formData, customer_id: (data as Customer).id });
+      setShowClientModal(false);
+      setClientForm({ name: '', email: '', phone: '', address: '', notes: '' });
+    }
+    setClientLoading(false);
+  };
+
   const advanceState = async (jobId: string, newStatus: JobState) => {
     setLoading(true);
     try {
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
       const res = await fetch('/api/jobs', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
         body: JSON.stringify({ job_id: jobId, status: newStatus }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || 'Failed to update job');
-      } else {
-        if (selectedJob?.id === jobId) {
-          setSelectedJob({ ...selectedJob, status: newStatus, ...data.job });
-        }
+      if (!res.ok) toast.error(data.error || 'Failed to update job');
+      else {
+        if (selectedJob?.id === jobId) setSelectedJob({ ...selectedJob, status: newStatus, ...data.job });
         toast.success(`Job moved to ${newStatus.replace(/_/g, ' ')}`);
       }
-    } catch {
-      toast.error('Network error updating job');
-    }
+    } catch { toast.error('Network error updating job'); }
     refreshJobs();
     setLoading(false);
   };
 
-const addMaterial = async (jobId: string, materialId: string, quantity: number) => {
+  const addMaterial = async (jobId: string, materialId: string, quantity: number) => {
     setLoading(true);
     const { supabase } = await import('@/lib/supabase/client');
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-    const { data: material } = await supabase.from('materials').select('admin_unit_price').eq('id', materialId).single();
-    if (!material) {
-      toast.error('Material not found');
-      setLoading(false);
-      return;
-    }
-    const materialData = material as unknown as { admin_unit_price: number };
-    const jobMaterialData = {
+    if (!supabase) { setLoading(false); return; }
+    // Tech only sets qty - price stays 0 for owner to fill
+    const { data, error } = await supabase.from('job_materials').insert({
       job_card_id: jobId,
       material_id: materialId,
       quantity,
-      admin_unit_price: materialData.admin_unit_price,
-      line_total: materialData.admin_unit_price * quantity,
-    };
-    const { data, error } = await supabase
-      .from('job_materials')
-      .insert(jobMaterialData as unknown as { [key: string]: unknown })
-      .select()
-      .single();
+      admin_unit_price: 0,
+      line_total: 0,
+    } as any).select().single();
     if (error) toast.error('Error: ' + error.message);
     else {
-      const resultData = data as unknown as { line_total: number; id?: string };
-      const { data: current } = await supabase.from('job_cards').select('materials_cost').eq('id', jobId).single();
-      const currentData = current as unknown as { materials_cost?: number } | null;
-      const newCost = (currentData?.materials_cost || 0) + resultData.line_total;
-      const { error: updateError } = await supabase.from('job_cards').update({ materials_cost: newCost } as unknown as { [key: string]: unknown }).eq('id', jobId);
-      if (updateError) toast.error('Error updating material cost: ' + updateError.message);
+      toast.success('Quantity added - owner will set cost');
       if (selectedJob?.id === jobId) {
         const existingMaterials = selectedJob.job_materials || [];
-        setSelectedJob({
-          ...selectedJob,
-          job_materials: [...existingMaterials, resultData] as JobMaterial[],
-        });
+        setSelectedJob({ ...selectedJob, job_materials: [...existingMaterials, data as JobMaterial] });
       }
       refreshJobs();
     }
@@ -125,19 +166,19 @@ const addMaterial = async (jobId: string, materialId: string, quantity: number) 
   const addCustomMaterial = async (jobId: string, customName: string, quantity: number) => {
     setLoading(true);
     const { supabase } = await import('@/lib/supabase/client');
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
+    if (!supabase) { setLoading(false); return; }
     const { error } = await supabase.from('job_materials').insert({
       job_card_id: jobId,
       custom_name: customName,
       quantity,
       admin_unit_price: 0,
       line_total: 0,
-    } as unknown as { [key: string]: unknown });
+    } as any);
     if (error) toast.error('Error: ' + error.message);
-    else refreshJobs();
+    else {
+      toast.success('Quantity added');
+      refreshJobs();
+    }
     setLoading(false);
   };
 
@@ -157,74 +198,114 @@ const addMaterial = async (jobId: string, materialId: string, quantity: number) 
         <div className="card p-4">
           <h2 className="font-semibold text-gray-900 mb-2">Job Details</h2>
           <p className="text-gray-600">{selectedJob.description}</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Customer: {selectedJob.customer?.name || 'Unknown'}
-          </p>
+          <p className="text-sm text-gray-500 mt-2">Customer: {selectedJob.customer?.name || 'Unknown'}</p>
           {selectedJob.admin_notes && (
             <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Admin Notes:</strong> {selectedJob.admin_notes}
-              </p>
+              <p className="text-sm text-blue-800"><strong>Admin Notes:</strong> {selectedJob.admin_notes}</p>
+            </div>
+          )}
+          {selectedJob.technician_notes && (
+            <div className="mt-3 p-3 bg-amber-50 rounded-lg">
+              <p className="text-sm text-amber-800"><strong>Tech Notes:</strong> {selectedJob.technician_notes}</p>
             </div>
           )}
         </div>
 
-        <MaterialSelector
-          jobId={selectedJob.id}
-          onAddMaterial={addMaterial}
-          onAddCustom={addCustomMaterial}
-          loading={loading}
-        />
+        <MaterialSelector jobId={selectedJob.id} onAddMaterial={addMaterial} onAddCustom={addCustomMaterial} loading={loading} />
 
-          <JobMaterialsList
-            materials={selectedJob.job_materials || []}
-            onUpdate={refreshJobs}
-          />
+        <JobMaterialsList materials={selectedJob.job_materials || []} onUpdate={refreshJobs} />
 
-          <StateControls
-            job={selectedJob}
-            onAdvance={advanceState}
-            loading={loading}
-          />
+        <StateControls job={selectedJob} onAdvance={advanceState} loading={loading} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">My Jobs</h1>
+    <div className="space-y-6 pb-24 md:pb-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+        <h1 className="text-2xl font-bold text-gray-900">My Jobs</h1>
+        <button onClick={() => setShowCreateModal(true)} className="btn btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 text-base font-semibold px-6 py-3 min-h-[48px] shadow-[0_8px_20px_rgba(37,99,235,0.35)]">
+          <span className="text-xl leading-none">+</span> New Job
+        </button>
+      </div>
 
       <div className="grid gap-4">
         {jobs.map((job) => (
-          <div
-            key={job.id}
-            onClick={() => selectJob(job)}
-            className="card p-4 cursor-pointer hover:shadow-md transition-shadow"
-          >
+          <div key={job.id} onClick={() => selectJob(job)} className="card p-4 cursor-pointer hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <span className="font-mono text-sm font-semibold text-blue-600">{job.job_number}</span>
-                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    {JOB_STATE_LABELS[job.status]}
-                  </span>
+                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{JOB_STATE_LABELS[job.status]}</span>
                 </div>
                 <p className="text-gray-900 font-medium line-clamp-2">{job.description}</p>
-                <p className="text-gray-500 text-sm mt-1">
-                  {job.customer?.name || 'Unknown'}
-                </p>
+                <p className="text-gray-500 text-sm mt-1">{job.customer?.name || 'Unknown'}</p>
               </div>
               <div className="text-gray-400">→</div>
             </div>
           </div>
         ))}
-
         {jobs.length === 0 && (
           <div className="card p-8 text-center text-gray-500">
-            No jobs assigned to you yet.
+            No jobs yet. Tap + New Job to create one - owner will add pricing.
           </div>
         )}
       </div>
+
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur border-t border-gray-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:hidden">
+        <button onClick={() => setShowCreateModal(true)} className="btn btn-primary w-full inline-flex items-center justify-center gap-2 text-[17px] font-bold py-4 min-h-[56px] shadow-[0_8px_24px_rgba(37,99,235,0.4)]">
+          <span className="text-2xl leading-none">+</span> New Job
+        </button>
+      </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="card p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">New Job (Tech)</h2>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="label">Customer</label>
+                <div className="flex gap-2">
+                  <select value={formData.customer_id} onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })} className="input" required>
+                    <option value="">Select customer...</option>
+                    {customers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                  </select>
+                  <button type="button" onClick={() => setShowClientModal(true)} className="btn btn-secondary whitespace-nowrap">+ New Client</button>
+                </div>
+              </div>
+              <div>
+                <label className="label">Description</label>
+                <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="input" rows={3} required placeholder="What needs fixing?"/>
+              </div>
+              <div>
+                <label className="label">Notes for owner</label>
+                <textarea value={formData.technician_notes} onChange={(e) => setFormData({ ...formData, technician_notes: e.target.value })} className="input" rows={2} placeholder="Qty, site details..."/>
+                <p className="text-xs text-gray-500 mt-1">Owner will add hourly rate & material costs. You won't see pricing.</p>
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" className="btn btn-primary flex-1" disabled={loading}>{loading ? 'Creating...' : 'Create Job'}</button>
+                <button type="button" onClick={() => setShowCreateModal(false)} className="btn btn-secondary">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showClientModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="card p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">New Client</h2>
+            <form onSubmit={handleCreateClient} className="space-y-4">
+              <div><label className="label">Name</label><input type="text" value={clientForm.name} onChange={(e) => setClientForm({ ...clientForm, name: e.target.value })} className="input" required /></div>
+              <div><label className="label">Email</label><input type="email" value={clientForm.email} onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })} className="input" /></div>
+              <div><label className="label">Phone</label><input type="tel" value={clientForm.phone} onChange={(e) => setClientForm({ ...clientForm, phone: e.target.value })} className="input" /></div>
+              <div><label className="label">Address</label><textarea value={clientForm.address} onChange={(e) => setClientForm({ ...clientForm, address: e.target.value })} className="input" rows={2} required /></div>
+              <div><label className="label">Notes</label><textarea value={clientForm.notes} onChange={(e) => setClientForm({ ...clientForm, notes: e.target.value })} className="input" rows={2} /></div>
+              <div className="flex gap-3"><button type="submit" className="btn btn-primary flex-1" disabled={clientLoading}>{clientLoading ? 'Saving...' : 'Save Client'}</button><button type="button" onClick={() => setShowClientModal(false)} className="btn btn-secondary">Cancel</button></div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

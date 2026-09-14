@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/utils/audit';
-import { validateJobInput } from '@/lib/validation';
+import { validateJobInput, jobCreateByOwnerSchema, jobCreateByTechnicianSchema, validateWith } from '@/lib/validation';
 import { canAdvanceState, canAccessJob, canSeePricing } from '@/lib/utils/permissions';
 import { calculateJobTotals } from '@/lib/utils/calculations';
 import { processJobAssignedNotifications } from '@/lib/notifications/service';
@@ -74,25 +74,34 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (!profile || profile.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!profile || !['owner','technician'].includes(profile.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const isOwner = profile.role === 'owner';
+  const isTech = profile.role === 'technician';
 
   try {
     const body = await request.json();
-    const { customer_id, description, admin_hourly_rate, admin_notes, assigned_to } = body;
-    if (!customer_id || !description || admin_hourly_rate == null) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    // Role-based validation: tech qty/desc only, owner pricing
+    let validationErrors: string[] = [];
+    if (isTech) {
+      validationErrors = validateWith(jobCreateByTechnicianSchema, body);
+      if (validationErrors.length) return NextResponse.json({ error: validationErrors.join(', ') }, { status: 400 });
+      if (!body.customer_id || !body.description) return NextResponse.json({ error: 'Missing required fields: customer_id, description' }, { status: 400 });
+    } else {
+      validationErrors = validateWith(jobCreateByOwnerSchema, body);
+      if (validationErrors.length) return NextResponse.json({ error: validationErrors.join(', ') }, { status: 400 });
+      if (!body.customer_id || !body.description || body.admin_hourly_rate == null) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
-
-    // Validate numeric and other required fields via validator
-    const validationErrors = validateJobInput(body);
-    if (validationErrors.length > 0) {
-      return NextResponse.json({ error: validationErrors.join(', ') }, { status: 400 });
-    }
+    // Strip pricing if tech tried to send it
+    const { customer_id, description, technician_notes } = body;
+    const admin_hourly_rate = isOwner ? body.admin_hourly_rate : 0;
+    const admin_notes = isOwner ? body.admin_notes : null;
+    const assigned_to = isOwner ? body.assigned_to : null;
 
     const jobNumber = `JOB-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
     let finalAssignedTo = assigned_to;
-    if (!finalAssignedTo) {
+    // Only auto-assign for owner; tech-created jobs stay pending for owner to price/assign
+    if (!finalAssignedTo && isOwner) {
       const { data: technicians } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -120,6 +129,7 @@ export async function POST(request: NextRequest) {
         description,
         admin_hourly_rate,
         admin_notes,
+        technician_notes: technician_notes || null,
         assigned_to: finalAssignedTo,
         status: finalAssignedTo ? 'assigned' : 'pending',
         created_by: user.id,
@@ -174,11 +184,13 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', user.id).single();
-  if (!profile || profile.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!profile || !['owner','technician'].includes(profile.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const isOwner = profile.role === 'owner';
+  const isTech = profile.role === 'technician';
 
   try {
     const body = await request.json();
-    let { job_id, status, description, admin_hourly_rate, admin_notes, assigned_to } = body;
+    let { job_id, status, description, admin_hourly_rate, admin_notes, assigned_to, technician_notes } = body;
     if (!job_id) return NextResponse.json({ error: 'Missing job_id' }, { status: 400 });
 
     // Normalise form junk that Postgres rejects: "" is not a UUID or numeric.
@@ -192,6 +204,14 @@ export async function PATCH(request: NextRequest) {
 
     const { data: existingJob } = await supabase.from('job_cards').select('*').eq('id', job_id).single();
     if (!existingJob) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+    // Tech can only touch own jobs (assigned or created)
+    if (isTech && existingJob.assigned_to !== user.id && existingJob.created_by !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: not your job' }, { status: 403 });
+    }
+    // Strip pricing fields if tech tries to send them
+    if (isTech && (admin_hourly_rate !== undefined || admin_notes !== undefined || assigned_to !== undefined)) {
+      return NextResponse.json({ error: 'Technicians cannot set pricing or assignment' }, { status: 403 });
+    }
 
     // Validate state transition
     if (status && status !== existingJob.status) {
@@ -229,17 +249,22 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Build update payload — recalculate totals when state is changing
+    // Build update payload — role-based allowlist, recalculate totals when pricing or state changes
     const updates: Record<string, unknown> = {};
     if (status) updates.status = status;
     if (description !== undefined) updates.description = description;
-    if (admin_hourly_rate !== undefined) updates.admin_hourly_rate = admin_hourly_rate;
-    if (admin_notes !== undefined) updates.admin_notes = admin_notes;
-    if (assigned_to !== undefined) updates.assigned_to = assigned_to;
+    if (technician_notes !== undefined) updates.technician_notes = technician_notes;
+    if (isOwner) {
+      if (admin_hourly_rate !== undefined) updates.admin_hourly_rate = admin_hourly_rate;
+      if (admin_notes !== undefined) updates.admin_notes = admin_notes;
+      if (assigned_to !== undefined) updates.assigned_to = assigned_to;
+    }
     if (status === 'completed' && existingJob.status !== 'completed') updates.completed_at = new Date().toISOString();
     if (status === 'invoiced' && existingJob.status !== 'invoiced') updates.invoiced_at = new Date().toISOString();
 
-    if (status && status !== existingJob.status) {
+    // Recalc when status changes OR when owner updates pricing (rate change feeds invoice)
+    const shouldRecalc = (status && status !== existingJob.status) || (isOwner && admin_hourly_rate !== undefined);
+    if (shouldRecalc) {
       const { data: jmRows } = await supabase
         .from('job_materials')
         .select('admin_unit_price, quantity')

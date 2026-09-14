@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 // Job input validation schema
+// Legacy generic (kept for compat) - all optional
 export const jobInputSchema = z.object({
   customer_id: z.string().uuid('Invalid customer ID').optional(),
   description: z.string().min(1, 'Description is required').max(500, 'Description too long').optional(),
@@ -8,6 +9,46 @@ export const jobInputSchema = z.object({
   admin_notes: z.string().max(1000, 'Notes too long').optional(),
   assigned_to: z.string().uuid('Invalid assigned technician ID').optional(),
 });
+
+// Split schemas for role-based flow: tech creates qty/desc, owner sets pricing
+export const jobCreateByOwnerSchema = z.object({
+  customer_id: z.string().uuid('Invalid customer ID'),
+  description: z.string().min(1, 'Description is required').max(500).trim(),
+  admin_hourly_rate: z.number().min(0).or(z.string().regex(/^\d+(\.\d+)?$/).transform(Number)),
+  admin_notes: z.string().max(1000).optional(),
+  assigned_to: z.string().uuid().optional().nullable(),
+  technician_notes: z.string().max(1000).optional(),
+});
+export const jobCreateByTechnicianSchema = z.object({
+  customer_id: z.string().uuid('Invalid customer ID'),
+  description: z.string().min(1, 'Description is required').max(500).trim(),
+  technician_notes: z.string().max(1000).optional(),
+  // tech must NOT send pricing - stripped if present
+});
+export const jobUpdatePricingByOwnerSchema = z.object({
+  admin_hourly_rate: z.number().min(0).optional(),
+  admin_notes: z.string().max(1000).optional(),
+  description: z.string().min(1).max(500).optional(),
+  assigned_to: z.string().uuid().optional().nullable(),
+});
+export const jobUpdateByTechnicianSchema = z.object({
+  technician_notes: z.string().max(1000).optional(),
+  description: z.string().min(1).max(500).optional(),
+});
+
+// Job material split: tech qty, owner price
+export const jobMaterialQtySchema = z.object({
+  material_id: z.string().uuid().optional(),
+  custom_name: z.string().max(200).optional(),
+  quantity: z.number().positive().max(10000),
+}).refine(d => d.material_id || d.custom_name, 'material_id or custom_name required');
+export const jobMaterialPriceSchema = z.object({
+  admin_unit_price: z.number().min(0).max(100000),
+});
+
+export function validateWith<T>(schema: z.ZodSchema<T>, data: unknown): string[] {
+  try { schema.parse(data); return []; } catch (e) { if (e instanceof z.ZodError) return e.issues.map(i => `${i.path.join('.')}: ${i.message}`); throw e; }
+}
 
 // Invoice input validation schema
 export const invoiceInputSchema = z.object({

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
 import type { JobCard, JobMaterialRow, JobTender, JobSignature } from '@/types';
 import StateControls from '@/components/job-card/StateControls';
@@ -68,6 +69,26 @@ export default function JobCardDetail({
   };
 
   const existingSignature = signatures[signatures.length - 1];
+  const [hourlyRate, setHourlyRate] = useState(String(job.admin_hourly_rate ?? ''));
+  const [savingRate, setSavingRate] = useState(false);
+  useEffect(() => { setHourlyRate(String(job.admin_hourly_rate ?? '')); }, [job.admin_hourly_rate]);
+  const saveRate = async () => {
+    const n = Number(hourlyRate);
+    if (Number.isNaN(n) || n < 0) { toast.error('Invalid rate'); return; }
+    setSavingRate(true);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) { setSavingRate(false); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/jobs', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` }, body: JSON.stringify({ job_id: job.id, admin_hourly_rate: n }) });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      toast.error(err.error || 'Failed to save rate');
+    } else {
+      toast.success('Rate saved - invoice will use this');
+      onUpdate();
+    }
+    setSavingRate(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -97,6 +118,22 @@ export default function JobCardDetail({
         )}
       </div>
 
+      {/* Owner pricing - tech never sees */}
+      {canManage && (
+        <div className="card p-4 space-y-3">
+          <h3 className="font-semibold text-gray-900">Pricing (Owner only - tech doesn't see)</h3>
+          <div className="flex gap-3 items-end">
+            <div className="flex-1">
+              <label className="label">Hourly Rate (ZAR)</label>
+              <input type="number" step="0.01" value={hourlyRate} onChange={e => setHourlyRate(e.target.value)} className="input" placeholder="e.g. 450" />
+            </div>
+            <button onClick={saveRate} disabled={savingRate} className="btn btn-primary">{savingRate ? 'Saving...' : 'Save Rate'}</button>
+          </div>
+          <p className="text-xs text-gray-500">Tech fills qty, you set rate & material costs here. This feeds the invoice - tech never sees it.</p>
+          {job.grand_total > 0 && <p className="text-sm font-medium text-gray-700">Current job total: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(job.grand_total)}</p>}
+        </div>
+      )}
+
       {/* Finance / Invoice tab - owners only */}
       {canManage && <JobFinancePanel jobId={job.id} />}
 
@@ -108,12 +145,13 @@ export default function JobCardDetail({
         canManage={canManage}
       />
 
-      {/* Materials with bought / claimed columns */}
+      {/* Materials: tech qty, owner price */}
       <MaterialsTable
         materials={materials}
         canManage={canManage}
         onToggleFlag={toggleFlag}
         onRemoveMaterial={removeMaterial}
+        onUpdate={onUpdate}
       />
 
       {canManage && (
