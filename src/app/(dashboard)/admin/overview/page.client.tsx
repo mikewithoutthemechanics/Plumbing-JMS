@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { formatDateTime } from '@/lib/utils/calculations';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
 import type { JobCard, AuditLog, Material } from '@/types';
@@ -23,6 +24,7 @@ interface Props {
 const DEFAULT_COUNTS: JobCounts = { total: 0, pending: 0, toBeInvoiced: 0, invoiced: 0 };
 
 export default function AdminOverviewClient({ jobs: initialJobs = [], counts: initialCounts = DEFAULT_COUNTS, recentAudits: initialAudits = [], lowStock: initialLowStock = [] }: Props = {}) {
+  const router = useRouter();
   const [jobs, setJobs] = useState(initialJobs);
   const [counts, setCounts] = useState(initialCounts);
   const [recentAudits] = useState(initialAudits);
@@ -68,12 +70,22 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], counts: in
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-[var(--plumber-primary)] to-[var(--plumber-accent)]">
-          Punctual Plumbers Dashboard
-        </h1>
-        <div className="text-sm text-gray-500">{new Date().toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+    <div className="space-y-6 pb-24 md:pb-0">
+      {/* Header + Mobile-first New Job CTA */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-[var(--plumber-primary)] to-[var(--plumber-accent)]">
+            Punctual Plumbers Dashboard
+          </h1>
+          <div className="text-sm text-gray-500 mt-1">{new Date().toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+        </div>
+        <button
+          onClick={() => router.push('/admin/jobs?create=1')}
+          className="btn btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 text-base font-semibold px-6 py-3 min-h-[48px] shadow-[0_8px_20px_rgba(37,99,235,0.35)] active:scale-[0.98]"
+          aria-label="Create new job"
+        >
+          <span className="text-xl leading-none">+</span> New Job
+        </button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -197,6 +209,17 @@ export default function AdminOverviewClient({ jobs: initialJobs = [], counts: in
       </div>
 
       <AIToolsPanel />
+
+      {/* Mobile-first sticky New Job CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur border-t border-gray-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:hidden">
+        <button
+          onClick={() => router.push('/admin/jobs?create=1')}
+          className="btn btn-primary w-full inline-flex items-center justify-center gap-2 text-[17px] font-bold py-4 min-h-[56px] shadow-[0_8px_24px_rgba(37,99,235,0.4)] active:scale-[0.98]"
+          aria-label="Create new job (mobile)"
+        >
+          <span className="text-2xl leading-none">+</span> New Job
+        </button>
+      </div>
     </div>
   );
 }

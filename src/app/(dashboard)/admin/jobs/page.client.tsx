@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { formatDateTime } from '@/lib/utils/calculations';
 import { JOB_STATE_LABELS, JOB_STATES } from '@/lib/constants/job-states';
 import type { JobCard, Customer, Profile, BankingDetails } from '@/types';
@@ -20,6 +20,7 @@ interface Props {
 
 export default function AdminJobsClient({ initialJobs }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<AdminJobCard[]>(initialJobs);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [technicians, setTechnicians] = useState<Profile[]>([]);
@@ -51,6 +52,15 @@ export default function AdminJobsClient({ initialJobs }: Props) {
       .order('created_at', { ascending: false });
     if (data) setJobs(data as AdminJobCard[]);
   };
+
+  // Auto-open New Job modal when navigating from owner dashboard (mobile-first CTA)
+  useEffect(() => {
+    if (searchParams.get('create') === '1') {
+      setShowCreateModal(true);
+      // clean URL without reload
+      router.replace('/admin/jobs');
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     const initData = async () => {
@@ -91,7 +101,11 @@ export default function AdminJobsClient({ initialJobs }: Props) {
     if (error) toast.error('Error: ' + error.message);
     else {
       if (formData.assigned_to) {
-        fetch('/api/notifications', { method: 'POST' }).catch(() => {});
+        const { data: { session } } = await supabase.auth.getSession();
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
+        }).catch(() => {});
       }
       setShowCreateModal(false);
       setFormData({ job_number: '', customer_id: '', description: '', admin_hourly_rate: '', admin_notes: '', assigned_to: '' });
