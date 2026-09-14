@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
   const statusFilter = searchParams.get('status');
   const technicianId = searchParams.get('technicianId');
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+  const { data: { user } } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -48,7 +50,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const filteredJobs = jobs?.filter((job) => canAccessJob(userRole, job.status, job.assigned_to === user.id)) || [];
+  const filteredJobs = jobs?.filter((job) => canAccessJob(userRole, job.status, job.assigned_to === user.id) || (userRole === 'technician' && (job as any).created_by === user.id)) || [];
 
   const sanitized = filteredJobs.map((job: Record<string, unknown>) => {
     if (!canSeePricing(userRole)) {
@@ -70,7 +72,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const supabase = await getSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+  const { data: { user } } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
