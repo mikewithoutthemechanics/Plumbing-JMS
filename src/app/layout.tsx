@@ -6,7 +6,7 @@ import type { Metadata, Viewport } from 'next';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
 };
 
 export const metadata: Metadata = {
@@ -54,7 +54,17 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js').catch(console.error);
+                navigator.serviceWorker.register('/sw.js').then(function(reg){ reg.update(); }).catch(function(err){
+                  console.error('SW register failed', err);
+                  if(String(err).toLowerCase().includes('redirect')){
+                    navigator.serviceWorker.getRegistrations().then(function(regs){
+                      return Promise.all(regs.map(function(r){ return r.unregister(); }));
+                    }).then(function(){
+                      return caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){ return caches.delete(k); })); });
+                    }).then(function(){ location.reload(); });
+                  }
+                });
+                navigator.serviceWorker.addEventListener('controllerchange', function(){ location.reload(); });
               }
             `,
           }}
