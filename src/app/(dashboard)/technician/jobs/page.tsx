@@ -26,7 +26,7 @@ export default async function TechnicianJobsPage({ searchParams }: { searchParam
       customer:customers(name),
       job_materials(*)
     `)
-    .eq('assigned_to', user.id)
+    .or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`)
     .order('created_at', { ascending: false });
 
   return <TechnicianJobsClient initialJobs={jobs || []} userId={user.id} initialSelectedJobId={selectedJobId} />;

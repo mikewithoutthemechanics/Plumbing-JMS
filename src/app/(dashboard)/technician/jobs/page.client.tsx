@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
-import type { JobCard, JobMaterial, JobState, Customer } from '@/types';
+import type { JobCard, JobMaterial, JobState, Customer, TimeLog } from '@/types';
+import { calculateHours } from '@/lib/utils/calculations';
 import MaterialSelector from '@/components/material-picker/MaterialSelector';
 import JobMaterialsList from '@/components/job-card/JobMaterialsList';
 import StateControls from '@/components/job-card/StateControls';
@@ -25,6 +26,8 @@ export default function TechnicianJobsClient({ initialJobs, userId, initialSelec
   const [showClientModal, setShowClientModal] = useState(false);
   const [clientForm, setClientForm] = useState({ name: '', email: '', phone: '', address: '', notes: '' });
   const [clientLoading, setClientLoading] = useState(false);
+  const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
+  const [clockBusy, setClockBusy] = useState(false);
 
   useEffect(() => {
     if (!initialSelectedJobId) return;
@@ -64,6 +67,50 @@ export default function TechnicianJobsClient({ initialJobs, userId, initialSelec
   const selectJob = (job: JobCard & { customer?: { name: string }; job_materials?: JobMaterial[] }) => {
     setSelectedJob(job);
     setView('detail');
+  };
+
+  const loadTimeLogs = async (jobId: string) => {
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
+    const { data } = await supabase.from('time_logs').select('*').eq('job_card_id', jobId).order('clock_in', { ascending: false });
+    if (data) setTimeLogs(data as TimeLog[]);
+  };
+  useEffect(() => { if (selectedJob?.id) loadTimeLogs(selectedJob.id); }, [selectedJob?.id]);
+
+  const activeLog = timeLogs.find(l => !l.clock_out) ?? null;
+  const totalHours = timeLogs.reduce((a, t) => a + (t.hours || 0) + (!t.clock_out ? calculateHours(t.clock_in, new Date().toISOString()) : 0), 0);
+
+  const handleClockIn = async () => {
+    if (!selectedJob) return;
+    setClockBusy(true);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) { setClockBusy(false); return; }
+    const { error } = await supabase.from('time_logs').insert({ job_card_id: selectedJob.id, technician_id: userId, clock_in: new Date().toISOString(), hours: 0 } as any);
+    if (error) toast.error(error.message);
+    else {
+      toast.success('Clocked in — job in progress');
+      if (selectedJob.status === 'assigned') await advanceState(selectedJob.id, 'in_progress');
+      await loadTimeLogs(selectedJob.id);
+    }
+    setClockBusy(false);
+  };
+  const handleClockOut = async () => {
+    if (!selectedJob || !activeLog) return;
+    setClockBusy(true);
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) { setClockBusy(false); return; }
+    const hours = calculateHours(activeLog.clock_in, new Date().toISOString());
+    const { error } = await supabase.from('time_logs').update({ clock_out: new Date().toISOString(), hours } as any).eq('id', activeLog.id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success(`${hours.toFixed(2)}h logged`);
+      await loadTimeLogs(selectedJob.id);
+      // trigger recalc so labour cost updates
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch('/api/jobs', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` }, body: JSON.stringify({ job_id: selectedJob.id, recalc: true }) }).catch(()=>{});
+      refreshJobs();
+    }
+    setClockBusy(false);
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -207,6 +254,34 @@ export default function TechnicianJobsClient({ initialJobs, userId, initialSelec
           {selectedJob.technician_notes && (
             <div className="mt-3 p-3 bg-amber-50 rounded-lg">
               <p className="text-sm text-amber-800"><strong>Tech Notes:</strong> {selectedJob.technician_notes}</p>
+            </div>
+          )}
+        </div>
+
+        {/* One-tap In/Out — makes time tracking primary, not side trip */}
+        <div className="card p-4 border-2 border-blue-100 bg-blue-50/30">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-gray-900">Time on Job</h3>
+            <span className="text-sm font-bold text-blue-700 bg-white px-3 py-1 rounded-full border">{totalHours.toFixed(2)}h logged</span>
+          </div>
+          {activeLog ? (
+            <button onClick={handleClockOut} disabled={clockBusy} className="w-full btn bg-red-600 hover:bg-red-700 text-white font-bold py-4 text-lg min-h-[56px] shadow-lg">
+              {clockBusy ? 'Saving…' : `● Clock Out — ${calculateHours(activeLog.clock_in, new Date().toISOString()).toFixed(2)}h running`}
+            </button>
+          ) : (
+            <button onClick={handleClockIn} disabled={clockBusy} className="w-full btn btn-primary font-bold py-4 text-lg min-h-[56px] shadow-lg">
+              {clockBusy ? 'Starting…' : '▶ Clock In — Start Work'}
+            </button>
+          )}
+          <p className="text-xs text-gray-500 mt-2 text-center">{activeLog ? 'Tap to stop — hours auto-feed invoice. Mark Complete after.' : 'One tap starts the clock + moves job to In Progress. Hours drive the invoice.'}</p>
+          {timeLogs.length > 0 && (
+            <div className="mt-3 space-y-1">
+              {timeLogs.slice(0,3).map(l => (
+                <div key={l.id} className="flex justify-between text-xs text-gray-600 bg-white px-2 py-1.5 rounded border">
+                  <span>{new Date(l.clock_in).toLocaleString()} → {l.clock_out ? new Date(l.clock_out).toLocaleString() : 'now'}</span>
+                  <span className="font-medium">{l.clock_out ? `${Number(l.hours||0).toFixed(2)}h` : `${calculateHours(l.clock_in, new Date().toISOString()).toFixed(2)}h •`}</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
