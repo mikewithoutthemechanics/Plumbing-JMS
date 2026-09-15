@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
+import { calculateJobTotals } from '@/lib/utils/calculations';
 import type { JobCard, JobMaterialRow, JobTender, JobSignature } from '@/types';
 import StateControls from '@/components/job-card/StateControls';
 import MaterialSelector from '@/components/material-picker/MaterialSelector';
@@ -37,6 +38,26 @@ export default function JobCardDetail({
   const router = useRouter();
   const [signatoryName, setSignatoryName] = useState('');
 
+  // Live totals from current materials + rate (fixes stale job.grand_total after material adds)
+  const [timeLogs, setTimeLogs] = useState<{ hours: number }[]>([]);
+  const liveTotals = useMemo(() => {
+    const mats = materials.map(m => ({ unitPrice: (m as unknown as { admin_unit_price?: number }).admin_unit_price || 0, quantity: m.quantity || 0 }));
+    const hours = timeLogs.reduce((a, t) => a + (t.hours || 0), 0);
+    return calculateJobTotals(Number(job.admin_hourly_rate || 0), hours, mats);
+  }, [materials, timeLogs, job.admin_hourly_rate]);
+
+  const triggerRecalc = async () => {
+    try {
+      const { supabase } = await import('@/lib/supabase/client');
+      const s = supabase ? (await supabase.auth.getSession()).data.session : null;
+      await fetch('/api/jobs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s?.access_token ?? ''}` },
+        body: JSON.stringify({ job_id: job.id, recalc: true }),
+      });
+    } catch {}
+  };
+
   const toggleFlag = async (material: JobMaterialRow, field: 'bought' | 'claimed') => {
     const { supabase } = await import('@/lib/supabase/client');
     if (!supabase) return;
@@ -67,13 +88,25 @@ export default function JobCardDetail({
     if (!supabase) return;
     const { error } = await supabase.from('job_materials').delete().eq('id', materialId);
     if (error) alert('Error: ' + error.message);
-    else onUpdate();
+    else {
+      await triggerRecalc();
+      onUpdate();
+    }
   };
 
   const existingSignature = signatures[signatures.length - 1];
   const [hourlyRate, setHourlyRate] = useState(String(job.admin_hourly_rate ?? ''));
   const [savingRate, setSavingRate] = useState(false);
   useEffect(() => { setHourlyRate(String(job.admin_hourly_rate ?? '')); }, [job.admin_hourly_rate]);
+  // Load time logs for live totals
+  useEffect(() => {
+    (async () => {
+      const { supabase } = await import('@/lib/supabase/client');
+      if (!supabase) return;
+      const { data } = await supabase.from('time_logs').select('hours').eq('job_card_id', job.id);
+      if (data) setTimeLogs(data as unknown as { hours: number }[]);
+    })();
+  }, [job.id, materials]);
   const saveRate = async () => {
     const n = Number(hourlyRate);
     if (Number.isNaN(n) || n < 0) { toast.error('Invalid rate'); return; }
@@ -133,9 +166,9 @@ export default function JobCardDetail({
             <p className="text-sm text-blue-800"><strong>Admin Notes:</strong> {job.admin_notes}</p>
           </div>
         )}
-        {canManage && job.grand_total > 0 && (
+        {(canManage && (job.grand_total > 0 || liveTotals.grandTotal > 0)) && (
           <p className="text-sm text-gray-700 mt-3 font-medium">
-            Total: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(job.grand_total)}
+            Total: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.grandTotal > 0 ? liveTotals.grandTotal : job.grand_total)}{liveTotals.grandTotal !== job.grand_total && liveTotals.grandTotal > 0 ? <span className="text-xs text-blue-600 ml-2">(live: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.grandTotal)} — save to sync)</span> : null}
           </p>
         )}
       </div>
@@ -152,7 +185,7 @@ export default function JobCardDetail({
             <button onClick={saveRate} disabled={savingRate} className="btn btn-primary">{savingRate ? 'Saving...' : 'Save Rate'}</button>
           </div>
           <p className="text-xs text-gray-500">Tech fills qty, you set rate & material costs here. This feeds the invoice - tech never sees it.</p>
-          {job.grand_total > 0 && <p className="text-sm font-medium text-gray-700">Current job total: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(job.grand_total)}</p>}
+          {(liveTotals.grandTotal > 0 || job.grand_total > 0) && <p className="text-sm font-medium text-gray-700">Current job total: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.grandTotal > 0 ? liveTotals.grandTotal : job.grand_total)}<br/><span className="text-xs text-gray-500">Labour: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.labour)} + Materials: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.materialsCost)} + VAT: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.vat)}</span></p>}
         </div>
       )}
 
@@ -188,7 +221,7 @@ export default function JobCardDetail({
               job_card_id: jobId, material_id: materialId, quantity, admin_unit_price: price, line_total: price * quantity,
              } as unknown as { [key: string]: unknown });
              if (error) alert('Error: ' + error.message);
-             else onUpdate();
+             else { await triggerRecalc(); onUpdate(); }
            }}
            onAddCustom={async (jobId, name, quantity) => {
              const { supabase } = await import('@/lib/supabase/client');
@@ -197,7 +230,7 @@ export default function JobCardDetail({
                job_card_id: jobId, custom_name: name, quantity, admin_unit_price: 0, line_total: 0,
              } as unknown as { [key: string]: unknown });
             if (error) alert('Error: ' + error.message);
-            else onUpdate();
+            else { await triggerRecalc(); onUpdate(); }
           }}
           loading={loading}
         />

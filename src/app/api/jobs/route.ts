@@ -27,6 +27,31 @@ export async function GET(request: NextRequest) {
 
   const userRole = profile?.role || 'technician';
 
+  // Phase 1 #2: technician cannot query other technician jobs (enumeration guard)
+  if (userRole === 'technician' && technicianId && technicianId !== user.id) {
+    return NextResponse.json({ error: 'Forbidden: cannot query other technician jobs' }, { status: 403 });
+  }
+
+  // Phase 1 #3: opt-in pagination — only when params present, otherwise unbounded (backward-compat)
+  const limitRaw = searchParams.get('limit');
+  const offsetRaw = searchParams.get('offset');
+  let limit: number | undefined;
+  let offset: number | undefined;
+  if (limitRaw !== null) {
+    const n = Number(limitRaw);
+    if (!Number.isInteger(n) || n < 1 || n > 100) {
+      return NextResponse.json({ error: 'limit must be an integer 1-100' }, { status: 400 });
+    }
+    limit = n;
+  }
+  if (offsetRaw !== null) {
+    const n = Number(offsetRaw);
+    if (!Number.isInteger(n) || n < 0 || n > 10000) {
+      return NextResponse.json({ error: 'offset must be an integer 0-10000' }, { status: 400 });
+    }
+    offset = n;
+  }
+
   let query = supabase
     .from('job_cards')
     .select(`
@@ -42,6 +67,14 @@ export async function GET(request: NextRequest) {
 
   if (userRole === 'technician' && technicianId) {
     query = query.eq('assigned_to', technicianId);
+  }
+
+  if (limit !== undefined) {
+    const o = offset ?? 0;
+    query = query.range(o, o + limit - 1);
+  } else if (offset !== undefined) {
+    // offset without limit is a no-op (requires limit), but validate; apply as range from offset
+    query = query.range(offset, offset + 99);
   }
 
   const { data: jobs, error } = await query;
@@ -101,8 +134,6 @@ export async function POST(request: NextRequest) {
     const admin_notes = isOwner ? body.admin_notes : null;
     const assigned_to = isOwner ? body.assigned_to : null;
 
-    const jobNumber = `JOB-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
     let finalAssignedTo = assigned_to;
     // Only auto-assign for owner; tech-created jobs stay pending for owner to price/assign
     if (!finalAssignedTo && isOwner) {
@@ -125,29 +156,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { data: job, error } = await supabase
-      .from('job_cards')
-      .insert({
-        job_number: jobNumber,
-        customer_id,
-        description,
-        admin_hourly_rate,
-        admin_notes,
-        technician_notes: technician_notes || null,
-        assigned_to: finalAssignedTo,
-        status: finalAssignedTo ? 'assigned' : 'pending',
-        created_by: user.id,
-        labour_cost: 0,
-        materials_cost: 0,
-        subtotal: 0,
-        vat_amount: 0,
-        grand_total: 0,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('[Jobs API] Create failed:', error);
+    // Phase 1 #1: retry on UNIQUE job_number collision (23505) — up to 3 attempts
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let job: any = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let lastError: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const jobNumber = `JOB-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const { data, error } = await supabase
+        .from('job_cards')
+        .insert({
+          job_number: jobNumber,
+          customer_id,
+          description,
+          admin_hourly_rate,
+          admin_notes,
+          technician_notes: technician_notes || null,
+          assigned_to: finalAssignedTo,
+          status: finalAssignedTo ? 'assigned' : 'pending',
+          created_by: user.id,
+          labour_cost: 0,
+          materials_cost: 0,
+          subtotal: 0,
+          vat_amount: 0,
+          grand_total: 0,
+        })
+        .select()
+        .single();
+      if (!error) { job = data; break; }
+      lastError = error;
+      if ((error as any).code !== '23505') break;
+    }
+    if (!job) {
+      console.error('[Jobs API] Create failed:', lastError);
       return NextResponse.json({ error: 'Failed to create job card' }, { status: 500 });
     }
 
@@ -194,7 +235,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    let { job_id, status, description, admin_hourly_rate, admin_notes, assigned_to, technician_notes } = body;
+    let { job_id, status, description, admin_hourly_rate, admin_notes, assigned_to, technician_notes, recalc } = body;
     if (!job_id) return NextResponse.json({ error: 'Missing job_id' }, { status: 400 });
 
     // Normalise form junk that Postgres rejects: "" is not a UUID or numeric.
@@ -266,8 +307,8 @@ export async function PATCH(request: NextRequest) {
     if (status === 'completed' && existingJob.status !== 'completed') updates.completed_at = new Date().toISOString();
     if (status === 'invoiced' && existingJob.status !== 'invoiced') updates.invoiced_at = new Date().toISOString();
 
-    // Recalc when status changes OR when owner updates pricing (rate change feeds invoice)
-    const shouldRecalc = (status && status !== existingJob.status) || (isOwner && admin_hourly_rate !== undefined);
+    // Recalc when status changes OR when owner updates pricing OR when client requests recalc (after material/time changes)
+    const shouldRecalc = (status && status !== existingJob.status) || (isOwner && admin_hourly_rate !== undefined) || recalc === true;
     if (shouldRecalc) {
       const { data: jmRows } = await supabase
         .from('job_materials')

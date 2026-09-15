@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import ExcelJS from 'exceljs';
+import { calculateJobTotals } from '@/lib/utils/calculations';
 
 interface Invoice {
   id: string;
@@ -18,6 +19,7 @@ interface Invoice {
 export default function JobFinancePanel({ jobId }: { jobId: string }) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<{ due: number; vat: number; labour: number; materials: number } | null>(null);
 
   // Hygiene fix: abort stale fetches when jobId changes; always clear loading.
   useEffect(() => {
@@ -48,6 +50,25 @@ export default function JobFinancePanel({ jobId }: { jobId: string }) {
       controller.abort();
     };
   }, [jobId]);
+
+  // Live preview when no invoice exists — shows what invoice WOULD be (fixes "invoice doesn't update" confusion)
+  useEffect(() => {
+    if (invoices.length > 0) { setPreview(null); return; }
+    (async () => {
+      const { supabase } = await import('@/lib/supabase/client');
+      if (!supabase) return;
+      const [{ data: job }, { data: mats }, { data: logs }] = await Promise.all([
+        supabase.from('job_cards').select('admin_hourly_rate').eq('id', jobId).single(),
+        supabase.from('job_materials').select('admin_unit_price,quantity').eq('job_card_id', jobId),
+        supabase.from('time_logs').select('hours').eq('job_card_id', jobId),
+      ]);
+      const materials = (mats || []).map((m: { admin_unit_price: number; quantity: number }) => ({ unitPrice: m.admin_unit_price || 0, quantity: m.quantity || 0 }));
+      const hours = (logs || []).reduce((a: number, t: { hours: number }) => a + (t.hours || 0), 0);
+      const rate = (job as unknown as { admin_hourly_rate: number } | null)?.admin_hourly_rate || 0;
+      const t = calculateJobTotals(rate, hours, materials);
+      setPreview({ due: t.grandTotal, vat: t.vat, labour: t.labour, materials: t.materialsCost });
+    })();
+  }, [jobId, invoices.length]);
 
   const totals = useMemo(() => {
     const due = invoices.reduce((a, i) => a + Number(i.amount_due || 0), 0);
@@ -149,6 +170,12 @@ export default function JobFinancePanel({ jobId }: { jobId: string }) {
             <div className="p-3 bg-gray-50 rounded">Paid<br/><strong>{totals.paid.toFixed(2)}</strong></div>
             <div className="p-3 bg-gray-50 rounded">Balance<br/><strong>{totals.balance.toFixed(2)}</strong></div>
           </div>
+          {invoices.length === 0 && preview && preview.due > 0 && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+              <strong>Next invoice preview:</strong> {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(preview.due)} incl. VAT (Labour {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(preview.labour)} + Materials {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(preview.materials)} + VAT {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(preview.vat)})<br/>
+              <span className="text-xs text-blue-700">Add materials / set rate above — this updates live. Click “Mark as To Be Invoiced” to create the invoice.</span>
+            </div>
+          )}
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-gray-100">
@@ -165,7 +192,7 @@ export default function JobFinancePanel({ jobId }: { jobId: string }) {
                     <td className="p-2 text-right"><button onClick={() => handleDeleteInvoice(inv.id)} className="text-red-600 hover:text-red-800 text-xs">Delete</button></td>
                   </tr>
                 ))}
-                {invoices.length === 0 && <tr><td colSpan={6} className="p-4 text-center text-gray-500">No invoices yet</td></tr>}
+                {invoices.length === 0 && <tr><td colSpan={6} className="p-4 text-center text-gray-500">{preview && preview.due > 0 ? 'No invoice yet — preview above shows what will be created' : 'No invoices yet — add materials and rate above'}</td></tr>}
               </tbody>
             </table>
           </div>

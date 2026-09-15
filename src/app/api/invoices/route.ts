@@ -86,6 +86,14 @@ export async function POST(request: NextRequest) {
     const totals = calculateJobTotals(hourlyRate, totalHours, materials);
 
     const amountDue = totals.grandTotal;
+    // Sync job_cards so the card display matches the invoice (fixes stale grand_total after material adds)
+    await supabase.from('job_cards').update({
+      labour_cost: totals.labour,
+      materials_cost: totals.materialsCost,
+      subtotal: totals.subtotal,
+      vat_amount: totals.vat,
+      grand_total: totals.grandTotal,
+    } as never).eq('id', job_card_id);
     const { data: invoice, error } = await supabase
       .from('invoices')
       .insert({
