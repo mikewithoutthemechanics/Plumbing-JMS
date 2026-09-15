@@ -12,9 +12,10 @@ interface Props {
   job: Job;
   onAdvance: (jobId: string, newStatus: JobState) => void;
   loading: boolean;
+  hasTimeLogs?: boolean;
 }
 
-export default function StateControls({ job, onAdvance, loading }: Props) {
+export default function StateControls({ job, onAdvance, loading, hasTimeLogs = true }: Props) {
   const remaining = JOB_STATE_TRANSITIONS[job.status] || [];
 
   if (remaining.length === 0) {
@@ -29,16 +30,20 @@ export default function StateControls({ job, onAdvance, loading }: Props) {
     <div className="card p-4">
       <h3 className="font-semibold text-gray-900 mb-3">Advance Job</h3>
       <div className="flex flex-wrap gap-2">
-        {remaining.map((nextState) => (
-          <button
-            key={nextState}
-            onClick={() => onAdvance(job.id, nextState)}
-            className="btn btn-primary"
-            disabled={loading}
-          >
-            Mark as {JOB_STATE_LABELS[nextState]}
-          </button>
-        ))}
+        {remaining.map((nextState) => {
+          const isCompletedSkip = job.status === 'assigned' && nextState === 'completed' && hasTimeLogs === false;
+          return (
+            <button
+              key={nextState}
+              onClick={() => onAdvance(job.id, nextState)}
+              className={`btn btn-primary ${isCompletedSkip ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={loading || isCompletedSkip}
+              title={isCompletedSkip ? 'Start job first — no time logged' : undefined}
+            >
+              Mark as {JOB_STATE_LABELS[nextState]}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
