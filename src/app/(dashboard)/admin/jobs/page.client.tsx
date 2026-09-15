@@ -35,7 +35,6 @@ export default function AdminJobsClient({ initialJobs }: Props) {
     job_number: '',
     customer_id: '',
     description: '',
-    admin_hourly_rate: '',
     admin_notes: '',
     assigned_to: '',
   });
@@ -91,7 +90,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
       job_number: formData.job_number.trim() || `JOB-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
       customer_id: formData.customer_id,
       description: formData.description,
-      admin_hourly_rate: parseFloat(formData.admin_hourly_rate),
+      admin_hourly_rate: 0,
       admin_notes: formData.admin_notes,
       assigned_to: formData.assigned_to || null,
       status: formData.assigned_to ? 'assigned' : 'pending',
@@ -108,7 +107,7 @@ export default function AdminJobsClient({ initialJobs }: Props) {
         }).catch(() => {});
       }
       setShowCreateModal(false);
-      setFormData({ job_number: '', customer_id: '', description: '', admin_hourly_rate: '', admin_notes: '', assigned_to: '' });
+      setFormData({ job_number: '', customer_id: '', description: '', admin_notes: '', assigned_to: '' });
       refreshJobs();
     }
     setLoading(false);
@@ -360,18 +359,6 @@ export default function AdminJobsClient({ initialJobs }: Props) {
                   rows={3}
                   required
                   placeholder="Describe the job..."
-                />
-              </div>
-
-              <div>
-                <label className="label">Hourly Rate (ZAR)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.admin_hourly_rate}
-                  onChange={(e) => setFormData({ ...formData, admin_hourly_rate: e.target.value })}
-                  className="input"
-                  required
                 />
               </div>
 

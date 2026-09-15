@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { JOB_STATE_LABELS } from '@/lib/constants/job-states';
-import { calculateJobTotals, formatDateTime } from '@/lib/utils/calculations';
-import type { JobCard, JobMaterialRow, JobTender, JobSignature, TimeLog } from '@/types';
+import { calculateJobTotals } from '@/lib/utils/calculations';
+import type { JobCard, JobMaterialRow, JobTender, JobSignature } from '@/types';
 import StateControls from '@/components/job-card/StateControls';
 import MaterialSelector from '@/components/material-picker/MaterialSelector';
 import SignaturePad from '@/components/job-card/SignaturePad';
@@ -38,16 +38,11 @@ export default function JobCardDetail({
   const router = useRouter();
   const [signatoryName, setSignatoryName] = useState('');
 
-  // Live totals from current materials + rate (fixes stale job.grand_total after material adds)
-  const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
-  const [editingLogId, setEditingLogId] = useState<string | null>(null);
-  const [editHoursVal, setEditHoursVal] = useState<string>('');
-  const [savingHours, setSavingHours] = useState(false);
+  // Live totals from materials only (labor hrs removed — invoice is materials + work done)
   const liveTotals = useMemo(() => {
     const mats = materials.map(m => ({ unitPrice: (m as unknown as { admin_unit_price?: number }).admin_unit_price || 0, quantity: m.quantity || 0 }));
-    const hours = timeLogs.reduce((a, t) => a + (t.hours || 0), 0);
-    return calculateJobTotals(Number(job.admin_hourly_rate || 0), hours, mats);
-  }, [materials, timeLogs, job.admin_hourly_rate]);
+    return calculateJobTotals(0, 0, mats);
+  }, [materials]);
 
   const triggerRecalc = async () => {
     try {
@@ -98,67 +93,6 @@ export default function JobCardDetail({
   };
 
   const existingSignature = signatures[signatures.length - 1];
-  const [hourlyRate, setHourlyRate] = useState(String(job.admin_hourly_rate ?? ''));
-  const [savingRate, setSavingRate] = useState(false);
-  useEffect(() => { setHourlyRate(String(job.admin_hourly_rate ?? '')); }, [job.admin_hourly_rate]);
-  const loadTimeLogs = async () => {
-    const { supabase } = await import('@/lib/supabase/client');
-    if (!supabase) return;
-    const { data } = await supabase.from('time_logs').select('*').eq('job_card_id', job.id).order('clock_in', { ascending: true });
-    if (data) setTimeLogs(data as unknown as TimeLog[]);
-  };
-  // Load time logs for live totals
-  useEffect(() => {
-    loadTimeLogs();
-  }, [job.id, materials]);
-
-  const saveHours = async (logId: string) => {
-    const n = Number(editHoursVal);
-    if (Number.isNaN(n) || n < 0 || n > 168) { toast.error('Hours must be 0–168'); return; }
-    setSavingHours(true);
-    const { supabase } = await import('@/lib/supabase/client');
-    if (!supabase) { setSavingHours(false); return; }
-    const { error } = await supabase.from('time_logs').update({ hours: n } as unknown as never).eq('id', logId);
-    if (error) toast.error(error.message);
-    else {
-      toast.success('Hours updated');
-      setEditingLogId(null);
-      await loadTimeLogs();
-      await triggerRecalc();
-      onUpdate();
-    }
-    setSavingHours(false);
-  };
-  const deleteLog = async (logId: string) => {
-    if (!confirm('Delete this time log?')) return;
-    const { supabase } = await import('@/lib/supabase/client');
-    if (!supabase) return;
-    const { error } = await supabase.from('time_logs').delete().eq('id', logId);
-    if (error) toast.error(error.message);
-    else {
-      toast.success('Time log deleted');
-      await loadTimeLogs();
-      await triggerRecalc();
-      onUpdate();
-    }
-  };
-  const saveRate = async () => {
-    const n = Number(hourlyRate);
-    if (Number.isNaN(n) || n < 0) { toast.error('Invalid rate'); return; }
-    setSavingRate(true);
-    const { supabase } = await import('@/lib/supabase/client');
-    if (!supabase) { setSavingRate(false); return; }
-    const { data: { session } } = await supabase.auth.getSession();
-    const res = await fetch('/api/jobs', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` }, body: JSON.stringify({ job_id: job.id, admin_hourly_rate: n }) });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      toast.error(err.error || 'Failed to save rate');
-    } else {
-      toast.success('Rate saved - invoice will use this');
-      onUpdate();
-    }
-    setSavingRate(false);
-  };
 
   const handleDeleteJob = async () => {
     if (!confirm(`Delete job ${job.job_number}? This will delete its materials, time logs and invoices. Cannot be undone.`)) return;
@@ -203,65 +137,10 @@ export default function JobCardDetail({
         )}
         {(canManage && (job.grand_total > 0 || liveTotals.grandTotal > 0)) && (
           <p className="text-sm text-gray-700 mt-3 font-medium">
-            Total: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.grandTotal > 0 ? liveTotals.grandTotal : job.grand_total)}{liveTotals.grandTotal !== job.grand_total && liveTotals.grandTotal > 0 ? <span className="text-xs text-blue-600 ml-2">(live: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.grandTotal)} — save to sync)</span> : null}
+            Total (materials + VAT): {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.grandTotal > 0 ? liveTotals.grandTotal : job.grand_total)}{liveTotals.grandTotal !== job.grand_total && liveTotals.grandTotal > 0 ? <span className="text-xs text-blue-600 ml-2">(live: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.grandTotal)})</span> : null}
           </p>
         )}
       </div>
-
-      {/* Owner pricing - tech never sees */}
-      {canManage && (
-        <div className="card p-4 space-y-3">
-          <h3 className="font-semibold text-gray-900">Pricing (Owner only - tech doesn't see)</h3>
-          <div className="flex gap-3 items-end">
-            <div className="flex-1">
-              <label className="label">Hourly Rate (ZAR)</label>
-              <input type="number" step="0.01" value={hourlyRate} onChange={e => setHourlyRate(e.target.value)} className="input" placeholder="e.g. 450" />
-            </div>
-            <button onClick={saveRate} disabled={savingRate} className="btn btn-primary">{savingRate ? 'Saving...' : 'Save Rate'}</button>
-          </div>
-          <p className="text-xs text-gray-500">Tech fills qty, you set rate & material costs here. This feeds the invoice - tech never sees it.</p>
-          {(liveTotals.grandTotal > 0 || job.grand_total > 0) && <p className="text-sm font-medium text-gray-700">Current job total: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.grandTotal > 0 ? liveTotals.grandTotal : job.grand_total)}<br/><span className="text-xs text-gray-500">Labour: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.labour)} + Materials: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.materialsCost)} + VAT: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.vat)}</span></p>}
-        </div>
-      )}
-
-      {/* Owner-editable hours — time_logs for this job */}
-      {canManage && (
-        <div className="card p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">Labour Hours (Owner edit)</h3>
-            <span className="text-xs text-gray-500">Total: {timeLogs.reduce((a, t) => a + (t.hours || 0), 0).toFixed(2)}h → {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(liveTotals.labour)}</span>
-          </div>
-          {timeLogs.length === 0 ? (
-            <p className="text-sm text-gray-500">No time logged yet — technician clocks in from Time Logger. You can also add manually below.</p>
-          ) : (
-            <div className="space-y-2">
-              {timeLogs.map((log) => (
-                <div key={log.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 bg-gray-50">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs text-gray-500">{formatDateTime(log.clock_in)} → {log.clock_out ? formatDateTime(log.clock_out) : 'clocked in'}</div>
-                    {editingLogId === log.id ? (
-                      <div className="flex gap-2 mt-1">
-                        <input type="number" step="0.25" min="0" max="168" value={editHoursVal} onChange={e => setEditHoursVal(e.target.value)} className="input h-8 w-24 text-sm" autoFocus />
-                        <button onClick={() => saveHours(log.id)} disabled={savingHours} className="btn btn-primary h-8 px-3 text-xs">{savingHours ? 'Saving…' : 'Save'}</button>
-                        <button onClick={() => setEditingLogId(null)} className="btn btn-secondary h-8 px-3 text-xs">Cancel</button>
-                      </div>
-                    ) : (
-                      <div className="text-sm font-medium text-gray-900">{Number(log.hours || 0).toFixed(2)} hours</div>
-                    )}
-                  </div>
-                  {editingLogId !== log.id && (
-                    <div className="flex gap-1.5">
-                      <button onClick={() => { setEditingLogId(log.id); setEditHoursVal(String(log.hours ?? 0)); }} className="px-2 py-1 text-xs border rounded hover:bg-white">Edit</button>
-                      <button onClick={() => deleteLog(log.id)} className="px-2 py-1 text-xs border border-red-200 text-red-600 rounded hover:bg-red-50">Delete</button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          <p className="text-xs text-gray-500">Editing hours here updates labour cost and invoice totals (recalc runs automatically). Hours 0–168.</p>
-        </div>
-      )}
 
       {/* Finance / Invoice tab - owners only */}
       {canManage && <JobFinancePanel jobId={job.id} />}
