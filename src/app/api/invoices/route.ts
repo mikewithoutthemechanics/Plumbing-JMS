@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { getSupabaseAdminClient, getSupabaseServerClient } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/utils/audit';
 import { validateInvoiceInput, validatePaymentInput } from '@/lib/validation';
 import { calculateJobTotals } from '@/lib/utils/calculations';
@@ -111,6 +111,37 @@ export async function POST(request: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     await logAudit({ tableName: 'invoices', recordId: invoice.id, action: 'INSERT', newValues: invoice, changedBy: user.id });
+
+    // Send to accountant(s) on file — in-app notification + email (fixes "invoice needs to be sent to accountant")
+    try {
+      const { data: accountants } = await supabase.from('profiles').select('id, email, full_name').eq('role', 'accountant');
+      if (accountants?.length) {
+        const admin = getSupabaseAdminClient();
+        for (const acc of accountants) {
+          try {
+            await admin.from('user_notifications').insert({
+              user_id: acc.id,
+              profile_id: acc.id,
+              type: 'invoice',
+              title: `New invoice ${invoice.invoice_number}`,
+              message: `Invoice ${invoice.invoice_number} for job ${job.job_number || job_card_id} — R${amountDue.toFixed(2)} (VAT R${totals.vat.toFixed(2)}) — Accountant → Invoices`,
+              data: { invoice_id: invoice.id, job_card_id, amount_due: amountDue, job_number: job.job_number },
+            } as never);
+          } catch {}
+          if (acc.email) {
+            try {
+              const { sendViaAgentMail } = await import('@/lib/notifications/agentmail');
+              const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://plumbing-jms.vercel.app';
+              await sendViaAgentMail({
+                to: acc.email,
+                subject: `New invoice ${invoice.invoice_number} — R${amountDue.toFixed(2)}`,
+                html: `<p>Hi ${acc.full_name || 'Accountant'},</p><p>New invoice <strong>${invoice.invoice_number}</strong> created for job ${job.job_number || job_card_id} — amount due <strong>R${amountDue.toFixed(2)}</strong> (VAT R${totals.vat.toFixed(2)}).</p><p><a href="${appUrl}/accountant/jobs">View in Accountant → Invoices</a></p>`,
+              });
+            } catch {}
+          }
+        }
+      }
+    } catch {}
     return NextResponse.json({ invoice }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
