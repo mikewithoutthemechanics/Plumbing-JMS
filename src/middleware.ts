@@ -3,6 +3,7 @@ import { checkRateLimit } from "@/lib/rate-limiter";
 import { logger } from "@/lib/logger";
 
 export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
   try {
     // Request logging (dev only)
     if (process.env.NODE_ENV !== "production") {
@@ -62,6 +63,13 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
       },
     });
 
@@ -82,13 +90,20 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname === "/";
 
     if (!user && !devMode && !isPublicRoute && !isApiRoute) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      const redirectResponse = NextResponse.redirect(url);
+      // Preserve refreshed cookies on redirect (critical for Safari/Chrome)
+      supabaseResponse.cookies.getAll().forEach((c) => redirectResponse.cookies.set(c.name, c.value, c));
+      return redirectResponse;
     }
 
     if (user && isPublicRoute) {
-      return NextResponse.redirect(
-        new URL("/admin/overview", request.url),
-      );
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/overview";
+      const redirectResponse = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach((c) => redirectResponse.cookies.set(c.name, c.value, c));
+      return redirectResponse;
     }
 
     if (
@@ -110,25 +125,31 @@ export async function middleware(request: NextRequest) {
         role === "owner" &&
         request.nextUrl.pathname.startsWith("/technician")
       ) {
-        return NextResponse.redirect(
-          new URL("/admin/jobs", request.url),
-        );
+        const url = request.nextUrl.clone();
+        url.pathname = "/admin/jobs";
+        const r = NextResponse.redirect(url);
+        supabaseResponse.cookies.getAll().forEach((c) => r.cookies.set(c.name, c.value, c));
+        return r;
       }
       if (
         role === "technician" &&
         request.nextUrl.pathname.startsWith("/admin")
       ) {
-        return NextResponse.redirect(
-          new URL("/technician/jobs", request.url),
-        );
+        const url = request.nextUrl.clone();
+        url.pathname = "/technician/jobs";
+        const r = NextResponse.redirect(url);
+        supabaseResponse.cookies.getAll().forEach((c) => r.cookies.set(c.name, c.value, c));
+        return r;
       }
       if (
         role === "accountant" &&
         !request.nextUrl.pathname.startsWith("/accountant")
       ) {
-        return NextResponse.redirect(
-          new URL("/accountant/jobs", request.url),
-        );
+        const url = request.nextUrl.clone();
+        url.pathname = "/accountant/jobs";
+        const r = NextResponse.redirect(url);
+        supabaseResponse.cookies.getAll().forEach((c) => r.cookies.set(c.name, c.value, c));
+        return r;
       }
     }
   } catch (err) {
@@ -141,7 +162,7 @@ export async function middleware(request: NextRequest) {
       : NextResponse.redirect(new URL("/login", request.url));
   }
 
-  return NextResponse.next();
+  return supabaseResponse;
 }
 
 export const config = {
