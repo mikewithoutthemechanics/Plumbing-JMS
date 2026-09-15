@@ -128,7 +128,6 @@ export default function DashboardLayout({
       case 'technician':
         return [
           { href: '/technician/jobs', label: 'My Jobs', icon: '📋' },
-          { href: '/technician/time', label: 'Time Log', icon: '⏱️' },
           { href: '/technician/materials', label: 'Materials', icon: '📦' },
         ];
       case 'accountant':
