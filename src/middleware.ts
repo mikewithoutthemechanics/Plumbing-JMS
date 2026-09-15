@@ -11,19 +11,37 @@ export async function middleware(request: NextRequest) {
     }
 
     // CSRF protection - check origin for non-GET/HEAD/OPTIONS
+    // Fix: allow both custom domain and vercel.app (client on app.punctualplumbers.co.za
+    // was blocked when NEXT_PUBLIC_APP_URL=plumbing-jms.vercel.app)
     if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) {
       const origin =
         request.headers.get("origin") || request.headers.get("referer") || "";
-      const allowedOrigin =
-        process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
-      if (
-        origin &&
-        new URL(origin).origin !== new URL(allowedOrigin).origin
-      ) {
-        return NextResponse.json(
-          { error: "Invalid origin" },
-          { status: 403 },
-        );
+      if (origin) {
+        let originHost = "";
+        try {
+          originHost = new URL(origin).origin;
+        } catch {
+          originHost = "";
+        }
+        if (originHost) {
+          const allowedOrigins = new Set<string>(
+            [
+              request.nextUrl.origin,
+              process.env.NEXT_PUBLIC_APP_URL
+                ? new URL(process.env.NEXT_PUBLIC_APP_URL).origin
+                : "",
+              "https://app.punctualplumbers.co.za",
+              "https://plumbing-jms.vercel.app",
+              "https://plumbing-jms-michael-s-projects-1c4584cf.vercel.app",
+            ].filter(Boolean) as string[],
+          );
+          if (!allowedOrigins.has(originHost)) {
+            return NextResponse.json(
+              { error: "Invalid origin" },
+              { status: 403 },
+            );
+          }
+        }
       }
     }
 
