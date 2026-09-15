@@ -5,10 +5,21 @@ export async function POST(request: NextRequest) {
   const supabase = await getSupabaseServerClient();
   const authHeader = request.headers.get('authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
-  const { data: { user } } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
+  let user: { id: string; email?: string } | null = null;
+  if (token) {
+    const { data, error } = await supabase.auth.getUser(token);
+    console.log('[TestEmail] getUser with token', { hasUser: !!data.user, error: error?.message });
+    user = data.user as unknown as { id: string; email?: string } | null;
+  }
+  if (!user) {
+    const { data } = await supabase.auth.getUser();
+    console.log('[TestEmail] getUser via cookies', { hasUser: !!data.user });
+    user = data.user as unknown as { id: string; email?: string } | null;
+  }
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const { data: profile, error: profErr } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  console.log('[TestEmail] profile', { userId: user.id, role: (profile as unknown as { role?: string })?.role, profErr: profErr?.message });
+  if ((profile as unknown as { role?: string })?.role !== 'owner') return NextResponse.json({ error: 'Forbidden', role: (profile as unknown as { role?: string })?.role }, { status: 403 });
 
   const body = await request.json().catch(() => ({}));
   const to = body.to || 'ballitoai@gmail.com';
