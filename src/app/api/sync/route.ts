@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { validateWith, jobMaterialQtySchema } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,25 @@ export async function POST(request: NextRequest) {
       const { data: job } = await supabase.from('job_cards').select('assigned_to').eq('id', jobCardId).single();
       if (!job || job.assigned_to !== user.id) {
         return NextResponse.json({ error: 'Forbidden: can only modify materials on jobs assigned to you' }, { status: 403 });
+      }
+    }
+  }
+
+  // Phase 1 #4: validate job_materials payload — prevents negative qty, missing material_id/custom_name, pricing injection
+  if (table === 'job_materials' && operation !== 'DELETE') {
+    if (payload.admin_unit_price !== undefined) {
+      return NextResponse.json({ error: 'admin_unit_price cannot be set via sync' }, { status: 400 });
+    }
+    const needsQtyValidation = operation === 'INSERT' || payload.quantity !== undefined;
+    if (needsQtyValidation) {
+      const toValidate = {
+        material_id: payload.material_id,
+        custom_name: payload.custom_name,
+        quantity: payload.quantity,
+      };
+      const errs = validateWith(jobMaterialQtySchema, toValidate);
+      if (errs.length) {
+        return NextResponse.json({ error: errs.join(', ') }, { status: 400 });
       }
     }
   }
