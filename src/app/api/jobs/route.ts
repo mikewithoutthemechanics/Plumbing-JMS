@@ -235,7 +235,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    let { job_id, status, description, admin_hourly_rate, admin_notes, assigned_to, technician_notes } = body;
+    let { job_id, status, description, admin_hourly_rate, admin_notes, assigned_to, technician_notes, recalc } = body;
     if (!job_id) return NextResponse.json({ error: 'Missing job_id' }, { status: 400 });
 
     // Normalise form junk that Postgres rejects: "" is not a UUID or numeric.
@@ -307,8 +307,8 @@ export async function PATCH(request: NextRequest) {
     if (status === 'completed' && existingJob.status !== 'completed') updates.completed_at = new Date().toISOString();
     if (status === 'invoiced' && existingJob.status !== 'invoiced') updates.invoiced_at = new Date().toISOString();
 
-    // Recalc when status changes OR when owner updates pricing (rate change feeds invoice)
-    const shouldRecalc = (status && status !== existingJob.status) || (isOwner && admin_hourly_rate !== undefined);
+    // Recalc when status changes OR when owner updates pricing OR when client requests recalc (after material/time changes)
+    const shouldRecalc = (status && status !== existingJob.status) || (isOwner && admin_hourly_rate !== undefined) || recalc === true;
     if (shouldRecalc) {
       const { data: jmRows } = await supabase
         .from('job_materials')
