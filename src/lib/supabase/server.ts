@@ -20,13 +20,28 @@ function requireSupabaseEnv(): { url: string; key: string } {
   return { url: url as string, key: key as string };
 }
 
+function requireAnonEnv(): { url: string; key: string } {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const missing: string[] = [];
+  if (!url) missing.push('NEXT_PUBLIC_SUPABASE_URL');
+  if (!key) missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required Supabase environment variables: ${missing.join(', ')}. ` +
+        'Set them in .env.local (dev) or your hosting provider settings (prod).'
+    );
+  }
+  return { url: url as string, key: key as string };
+}
+
 export async function getSupabaseServerClient() {
   const cookieStore = await cookies();
-  const { url: supabaseUrl, key: serviceKey } = requireSupabaseEnv();
+  const { url: supabaseUrl, key: anonKey } = requireAnonEnv();
 
   return createServerClient(
     supabaseUrl,
-    serviceKey,
+    anonKey,
     {
       cookies: {
         getAll() {

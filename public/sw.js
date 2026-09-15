@@ -1,10 +1,9 @@
-// Service Worker for Push Notifications - Safari-fixed v2
-// This file is served from /sw.js - CACHE v2 fixes Safari "response has redirections" bug
+// Service Worker for Push Notifications - Chrome/Safari hotfix v3 (2026-09-15)
+// FIX: login must NEVER be cached — otherwise Chrome/Safari serve stale HTML after auth and loop.
+// Bump to v3 forces deletion of all v2 caches on activate.
 
-const CACHE_NAME = 'plumbing-jms-v2';
+const CACHE_NAME = 'plumbing-jms-v3';
 const STATIC_ASSETS = [
-  '/',
-  '/login',
   '/manifest.json',
 ];
 
@@ -46,6 +45,8 @@ const SKIP_PATHS = [
   '/auth/callback',
   '/magic-link',
   '/api/',
+  '/login',
+  '/',
 ];
 
 self.addEventListener('fetch', (event) => {

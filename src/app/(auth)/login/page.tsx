@@ -26,7 +26,10 @@ export default function LoginPage() {
         }
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        router.push('/');
+        // Force hard navigation so middleware sees refreshed cookies (fixes Chrome/Safari loop)
+        router.refresh();
+        window.location.href = '/';
+        return;
       } else {
         const { supabase } = await import('@/lib/supabase/client');
         if (!supabase) {
