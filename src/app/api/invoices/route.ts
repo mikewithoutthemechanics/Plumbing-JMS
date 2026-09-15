@@ -114,12 +114,14 @@ export async function POST(request: NextRequest) {
 
     // Send to accountant(s) on file — in-app notification + email (fixes "invoice needs to be sent to accountant")
     try {
-      const { data: accountants } = await supabase.from('profiles').select('id, email, full_name').eq('role', 'accountant');
+      const { data: accountants, error: accErr } = await supabase.from('profiles').select('id, email, full_name').eq('role', 'accountant');
+      console.log('[Invoices] accountants query', { count: accountants?.length, accErr: accErr?.message });
+      if (accErr) console.error('[Invoices] accountant fetch failed', accErr);
       if (accountants?.length) {
         const admin = getSupabaseAdminClient();
         for (const acc of accountants) {
           try {
-            await admin.from('user_notifications').insert({
+            const { error: notifErr } = await admin.from('user_notifications').insert({
               user_id: acc.id,
               profile_id: acc.id,
               type: 'invoice',
@@ -127,21 +129,27 @@ export async function POST(request: NextRequest) {
               message: `Invoice ${invoice.invoice_number} for job ${job.job_number || job_card_id} — R${amountDue.toFixed(2)} (VAT R${totals.vat.toFixed(2)}) — Accountant → Invoices`,
               data: { invoice_id: invoice.id, job_card_id, amount_due: amountDue, job_number: job.job_number },
             } as never);
-          } catch {}
+            if (notifErr) console.error('[Invoices] notification insert failed', notifErr);
+            else console.log('[Invoices] notification inserted for', acc.email);
+          } catch (e) { console.error('[Invoices] notification exception', e); }
           if (acc.email) {
             try {
               const { sendViaAgentMail } = await import('@/lib/notifications/agentmail');
               const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://plumbing-jms.vercel.app';
-              await sendViaAgentMail({
+              console.log('[Invoices] sending AgentMail to', acc.email, 'invoice', invoice.invoice_number);
+              const res = await sendViaAgentMail({
                 to: acc.email,
                 subject: `New invoice ${invoice.invoice_number} — R${amountDue.toFixed(2)}`,
                 html: `<p>Hi ${acc.full_name || 'Accountant'},</p><p>New invoice <strong>${invoice.invoice_number}</strong> created for job ${job.job_number || job_card_id} — amount due <strong>R${amountDue.toFixed(2)}</strong> (VAT R${totals.vat.toFixed(2)}).</p><p><a href="${appUrl}/accountant/jobs">View in Accountant → Invoices</a></p>`,
               });
-            } catch {}
+              console.log('[Invoices] AgentMail sent', res);
+            } catch (e) { console.error('[Invoices] AgentMail failed for', acc.email, e); }
           }
         }
+      } else {
+        console.log('[Invoices] no accountants found — email not sent');
       }
-    } catch {}
+    } catch (e) { console.error('[Invoices] accountant notify outer failed', e); }
     return NextResponse.json({ invoice }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
