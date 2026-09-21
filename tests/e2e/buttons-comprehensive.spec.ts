@@ -1,12 +1,12 @@
 import { test, expect, Page } from '@playwright/test';
 
 /**
- * PRODUCTION-SAFE E2E SUITE.
+ * LOCAL DEV E2E SUITE.
  *
- * Runs against https://plumbing-jms.vercel.app (production data).
+ * Runs against http://localhost:3000 (local dev server).
+ * Uses new Supabase project: https://ypjrwemnpasdqgiecurk.supabase.co
  * Rules this file follows:
- * - Real UI login per role (the old demo-mode bypass no longer exists;
- *   unauthenticated dashboard URLs 307-redirect to /login).
+ * - Real UI login per role
  * - All suite-owned rows contain "DELETE ME" in a name/description field and
  *   are removed in afterAll (best-effort, never fails the run).
  * - Destructive actions target ONLY fixtures created by this suite.
@@ -14,17 +14,18 @@ import { test, expect, Page } from '@playwright/test';
  *   never deleted.
  */
 
-const BASE_URL = 'https://plumbing-jms.vercel.app';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
-// Production Supabase project. The anon key is publishable by design; it is
-// only used to obtain a JWT via password grant and to manage suite fixtures.
+// Production Supabase project (same as tests were originally configured for)
 const SUPABASE_URL = 'https://sunjjexcyfrlucitngwx.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_rrbQ_mpUhHWE0r1iUk6sPw_0ncDrW3i';
+const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1bmpqZXhjeWZybHVjaXRuZ3d4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NTgzNTg4MiwiZXhwIjoyMTAxNDExODgyfQ.wH5ZffRFYDQm0DCjnqkz50x5mRtsRSDnJn3iyDXZPNU';
 
+// Test credentials - these users need to be created in the new Supabase project
 const TEST_CREDENTIALS = {
-  owner: { email: 'e2e.owner@test.punctualplumbers.co.za', password: 'OwN3r-E2E-9xQ7!vLm2#Kp8Z' },
-  technician: { email: 'e2e.technician@test.punctualplumbers.co.za', password: 'T3ch-E2E-4mW8@dRt5&Qs1Yb' },
-  accountant: { email: 'e2e.accountant@test.punctualplumbers.co.za', password: 'AccT-E2E-7kP2$zNx9!Vm4Lo' },
+  owner: { email: 'e2e.owner@test.local', password: 'TestPass123!@#' },
+  technician: { email: 'e2e.technician@test.local', password: 'TestPass123!@#' },
+  accountant: { email: 'e2e.accountant@test.local', password: 'TestPass123!@#' },
 };
 type Role = keyof typeof TEST_CREDENTIALS;
 
@@ -50,22 +51,17 @@ let fixtureQuoteId: string | null = null;
 const createdStaffEmails: string[] = [];
 
 async function getOwnerToken(): Promise<string> {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      email: TEST_CREDENTIALS.owner.email,
-      password: TEST_CREDENTIALS.owner.password,
-    }),
+  console.log('[DEBUG] Using anon key:', SUPABASE_ANON_KEY.substring(0, 20) + '...');
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: TEST_CREDENTIALS.owner.email,
+    password: TEST_CREDENTIALS.owner.password,
   });
-  if (!res.ok) {
-    throw new Error(`owner login failed: ${res.status} ${await res.text()}`);
+  if (error) {
+    throw new Error(`owner login failed: ${error.message}`);
   }
-  const data = await res.json();
-  return data.access_token as string;
+  return data.session?.access_token ?? '';
 }
 
 function authedHeaders(token: string): Record<string, string> {

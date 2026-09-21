@@ -6,7 +6,7 @@ import type { Job, Customer, Material, User } from '@/lib/types';
 interface Database {
   public: {
     Tables: {
-      jobs: { Row: Job; Insert: Omit<Job, 'id'>; Update: Partial<Job> };
+      job_cards: { Row: Job; Insert: Omit<Job, 'id'>; Update: Partial<Job> };
       customers: { Row: Customer; Insert: Omit<Customer, 'id'>; Update: Partial<Customer> };
       materials: { Row: Material; Insert: Omit<Material, 'id'>; Update: Partial<Material> };
       users: { Row: User; Insert: Omit<User, 'id'>; Update: Partial<User> };
@@ -100,11 +100,11 @@ export async function deleteRow<T extends TableName>(
 }
 
 // Specific exports for convenience
-export const getJobs = (filters?: [string, string, unknown][]) => getRows('jobs', filters);
-export const getJob = (id: string) => getRowById('jobs', id);
-export const createJob = (data: Job) => insertRow('jobs', data);
-export const updateJob = (id: string, data: Partial<Job>) => updateRow('jobs', id, data);
-export const deleteJob = (id: string) => deleteRow('jobs', id);
+export const getJobs = (filters?: [string, string, unknown][]) => getRows('job_cards', filters);
+export const getJob = (id: string) => getRowById('job_cards', id);
+export const createJob = (data: Job) => insertRow('job_cards', data);
+export const updateJob = (id: string, data: Partial<Job>) => updateRow('job_cards', id);
+export const deleteJob = (id: string) => deleteRow('job_cards', id);
 
 export const getCustomers = (filters?: [string, string, unknown][]) => getRows('customers', filters);
 export const getCustomer = (id: string) => getRowById('customers', id);

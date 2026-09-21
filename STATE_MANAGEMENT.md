@@ -77,7 +77,7 @@ function useJobs() {
     queryFn: async () => {
       const { supabase } = await import('@/lib/supabase/client');
       const { data, error } = await supabase
-        .from('jobs')
+        .from('job_cards')
         .select('*');
       
       if (error) throw error;
@@ -100,7 +100,7 @@ function useUpdateJob() {
     mutationFn: async (updates: Partial<Job>) => {
       const { supabase } = await import('@/lib/supabase/client');
       const { error } = await supabase
-        .from('jobs')
+        .from('job_cards')
         .update(updates)
         .eq('id', updates.id);
       

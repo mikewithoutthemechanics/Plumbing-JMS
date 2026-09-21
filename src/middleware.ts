@@ -97,7 +97,7 @@ export async function middleware(request: NextRequest) {
 
     const demoModeEnv = process.env.NEXT_PUBLIC_DEMO_MODE;
     const isDevEnv = process.env.NODE_ENV !== 'production';
-    const devMode = (isDevEnv && request.cookies.get('dev_admin')?.value === '1') || (isDevEnv && (demoModeEnv === 'true' || demoModeEnv === '1' || demoModeEnv === 'TRUE'));
+    const devMode = isDevEnv && (demoModeEnv === 'true' || demoModeEnv === '1' || demoModeEnv === 'TRUE');
 
     const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
 
@@ -137,7 +137,18 @@ export async function middleware(request: NextRequest) {
         .eq("id", user.id)
         .single();
 
-      const role = profile?.role || "";
+      // Try to get role from JWT claims first (cached in user_metadata/app_metadata)
+      let role = user.user_metadata?.role || user.app_metadata?.role;
+      
+      if (!role) {
+        // Fallback to DB query if not in JWT
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        role = profile?.role || "";
+      }
 
       if (
         role === "owner" &&
