@@ -103,7 +103,7 @@ export async function deleteRow<T extends TableName>(
 export const getJobs = (filters?: [string, string, unknown][]) => getRows('job_cards', filters);
 export const getJob = (id: string) => getRowById('job_cards', id);
 export const createJob = (data: Job) => insertRow('job_cards', data);
-export const updateJob = (id: string, data: Partial<Job>) => updateRow('job_cards', id);
+export const updateJob = (id: string, data: Partial<Job>) => updateRow('job_cards', id, data);
 export const deleteJob = (id: string) => deleteRow('job_cards', id);
 
 export const getCustomers = (filters?: [string, string, unknown][]) => getRows('customers', filters);
