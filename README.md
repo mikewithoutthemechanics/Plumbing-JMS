@@ -1,87 +1,63 @@
-# Plumbing-JMS — Punctual Plumbers Job Management System
+# Plumbing Jms
 
-Production JMS for Punctual Plumbers — job cards, quotes, invoices, staff, scheduling, procurement, debtors, web-push + WhatsApp notifications, magic-link auth.
+![Repo size](https://img.shields.io/github/repo-size/mikewithoutthemechanics/plumbing-jms)
+![License](https://img.shields.io/github/license/mikewithoutthemechanics/plumbing-jms)
+![Top language](https://img.shields.io/github/languages/top/mikewithoutthemechanics/plumbing-jms)
 
-**Live:** https://plumbing-jms.vercel.app • https://app.punctualplumbers.co.za (custom domain)  
-**Repo:** `mikewithoutthemechanics/Plumbing-JMS` (`master`)  
-**Stack:** Next.js 16.2.11 (Turbopack) + React 19 + Supabase (Postgres 17, RLS) + TanStack Query + Tailwind 4  
-**Region:** Supabase `eu-central-1` (`sunjjexcyfrlucitngwx`), Vercel `iad1`
+## 👋 Hi, I'm Michael
 
-## Quick Start
+This is one of my projects. Here's what it's about, why it exists, and how you can use it.
 
-Requires Node 20+ and a Supabase project.
+## 📦 What it does
 
-```bash
-git clone https://github.com/mikewithoutthemechanics/Plumbing-JMS.git
-cd Plumbing-JMS
-npm ci            # use npm (pnpm removed - see below)
-cp .env.example .env.local  # fill values
-npm run dev       # http://localhost:3000
-npm run build     # production build
-```
+A project built by Michael. See the source for details.
 
-### Scripts
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | dev server |
-| `npm run build` | production build (currently ✓ 33s, 33 routes) |
-| `npm start` | serve build |
+## 🎯 The goal it fills
+
+This project exists to solve a specific need and make a particular task simpler. Whether it's automating a workflow, serving a website, or powering a tool, the goal is to be practical, usable, and straightforward.
+
+## 🚀 How to use
+
+1. **Get the code**
+   ```bash
+   git clone https://github.com/mikewithoutthemechanics/plumbing-jms.git
+   cd plumbing-jms
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Run it**
+   See the available commands below and pick the one you need.
+
+### Available commands
+
+| `npm run dev` | next dev |
+| `npm run build` | next build |
+| `npm run start` | next start |
 | `npm run lint` | eslint |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test -- --run` | vitest unit (21 tests) |
-| `npm run test:e2e` | playwright (hits prod by default - set `BASE_URL=http://localhost:3000` for local) |
-| `npm run audit` | `npm audit` |
+| `npm run typecheck` | tsc --noEmit |
+| `npm run test` | vitest |
+| `npm run test:watch` | vitest --watch |
+| `npm run test:e2e` | playwright test |
+| `npm run audit` | npm audit |
+| `npm run audit:fix` | npm audit fix |
+| `npm run build:analyze` | ANALYZE=true next build |
 
-## Environment
+## 🛠️ Tech stack
 
-Copy `.env.example` -> `.env.local` (or Vercel Project Settings → Environment Variables):
+react, next, typescript, tailwindcss, vitest, playwright
 
-| Variable | Purpose |
-|----------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key (public) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **secret** - server only |
-| `AGENTMAIL_API_KEY` / `AGENTMAIL_INBOX_ID` | email (AgentMail) |
-| `FROM_EMAIL` / `FROM_NAME` | outbound identity |
-| `OWNER_NOTIFICATION_EMAIL` | owner alerts |
-| `NEXT_PUBLIC_APP_URL` | canonical URL (`https://plumbing-jms.vercel.app`) |
-| `CRON_SECRET` | Vercel cron auth for `/api/notifications` |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | web-push |
+## 💡 Why it matters
 
-## Database
+This project is built to be useful and easy to pick up. If you're looking for a tool that does plumbing jms, this is a clean, maintainable starting point you can adapt to your own needs.
 
-Migrations in `supabase/migrations/` are source of truth. `supabase/schema.sql` is stale (2026-08-04 snapshot) - use `supabase/migrations/*` + `supabase/seed.sql`.
+## 📄 License
 
-For a fresh project:
-1. `supabase db push` (applies migrations)
-2. Verify `supabase/migrations/20260911120000_fix_job_cards_update_policies.sql` + `20260912015216_fix_supplier_quote_policies.sql` applied (critical RLS fixes)
+MIT
 
-Live project: `sunjjexcyfrlucitngwx` (`eu-central-1`, PG 17.6). Do not re-run `setup-database.sql`/`final_setup.sql` against live data.
+---
 
-## Deploy
-
-- **Vercel:** Auto-deploys on push to `master` (`plumbing-jms` project `prj_lF1HY8WfNEdrlc0MKfJljEckzxvY`, team `michael-s-projects-1c4584cf`). Build: `npm ci` -> `npm run build` (Turbopack). Cron: `0 0 * * *` -> `/api/notifications`.
-- **Custom domain:** `app.punctualplumbers.co.za` (Vercel Domain)
-- **Manual:** `vercel --prod` from repo root (requires Vercel login)
-
-## Roles
-
-- `owner` - full access (pricing, all jobs, audit, export)
-- `technician` - own assigned jobs (`assigned -> in_progress -> completed`), materials, time logs
-- `accountant` - `completed`/`to_be_invoiced`/`invoiced` jobs, invoices, debtors, exports
-
-Owner for client: `punctualplumbers@outlook.com` (`role: owner` in `public.profiles`).
-
-## Notes
-
-- Package manager is **npm** ( `package-lock.json` only). `pnpm-lock.yaml` removed 2026-09-14 after pnpm broke build; `pnpm-workspace.yaml` removed. Use `npm ci`.
-- `.e2e-token` and `playwright-report/`/`test-results/`/`npm-install.err` are untracked (`.gitignore`) - run `npm run test:e2e` with `BASE_URL` env, don't commit tokens.
-- See `HANDOVER.md`, `REMEDIATION_PLAN.md`, `SECURITY.md`, `API.md` for deeper docs.
-
-## Handover Checklist (pre go-live)
-
-- [ ] Transfer Supabase ownership / rotate `SUPABASE_SERVICE_ROLE_KEY`
-- [ ] Rotate AgentMail / Resend keys, update `OWNER_NOTIFICATION_EMAIL`
-- [ ] Transfer Vercel project / domain DNS
-- [ ] Transfer GitHub repo or add collaborator `punctualplumbers@outlook.com`
-- [ ] Regenerate VAPID keys if reconfiguring push
+Made with ❤️ by Michael
