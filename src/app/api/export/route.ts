@@ -4,8 +4,16 @@ import { logAudit } from '@/lib/utils/audit';
 import { canExport } from '@/lib/utils/permissions';
 import { generateExcelExport } from '@/lib/utils/export';
 import type { JobExportRow } from '@/lib/utils/export';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const rateKey = `rate:${request.nextUrl.pathname}:${ip}`;
+  const rateCheck = await checkRateLimit(rateKey);
+  if (!rateCheck.allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -84,6 +92,13 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const rateKey = `rate:${request.nextUrl.pathname}:${ip}`;
+  const rateCheck = await checkRateLimit(rateKey);
+  if (!rateCheck.allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

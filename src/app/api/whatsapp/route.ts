@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { sendWhatsappMessage, renderTemplate, type OpenWaConfig } from '@/lib/utils/whatsapp';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 // GET /api/whatsapp -> current OpenWA config (owner only)
 // PUT /api/whatsapp -> update OpenWA config (owner only)
@@ -17,6 +18,13 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const rateKey = `rate:${request.nextUrl.pathname}:${ip}`;
+  const rateCheck = await checkRateLimit(rateKey);
+  if (!rateCheck.allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -51,6 +59,13 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const rateKey = `rate:${request.nextUrl.pathname}:${ip}`;
+  const rateCheck = await checkRateLimit(rateKey);
+  if (!rateCheck.allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

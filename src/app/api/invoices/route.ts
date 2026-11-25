@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/utils/audit';
 import { validateInvoiceInput, validatePaymentInput } from '@/lib/validation';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 function invoiceNumber(): string {
   const d = new Date();
@@ -37,6 +38,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const rateKey = `rate:${request.nextUrl.pathname}:${ip}`;
+  const rateCheck = await checkRateLimit(rateKey);
+  if (!rateCheck.allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -87,6 +95,13 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const rateKey = `rate:${request.nextUrl.pathname}:${ip}`;
+  const rateCheck = await checkRateLimit(rateKey);
+  if (!rateCheck.allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const supabase = await getSupabaseServerClient();
   const { data: { user} } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
